@@ -1,0 +1,12 @@
+bin
+*/log/*.log
+*/log/*.log.gz
+asmm8
+*/tmp/*
+wordlist
+*.log
+*.cfg
+*.yml
+*.yaml
+dockerfile
+.dockerignore

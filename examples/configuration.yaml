@@ -1,0 +1,49 @@
+APP_ENV: DEV # DEV,TEST,PROD (DEV and TEST print logs in CMD screen)
+LOG_LEVEL: "0"
+# panic (zerolog.PanicLevel, 5)
+# fatal (zerolog.FatalLevel, 4)
+# error (zerolog.ErrorLevel, 3)
+# warn (zerolog.WarnLevel, 2)
+# info (zerolog.InfoLevel, 1)
+# debug (zerolog.DebugLevel, 0)
+# trace (zerolog.TraceLevel, -1)
+ORCHESTRATORM8:
+  Services:
+      asmm8: "http://127.0.0.1:8000"
+      naabum8: "http://127.0.0.1:8001"
+  Exchanges: # Format below: exchange_name:exchange_type
+    cptm8: "topic" 
+    notification: "topic"
+  asmm8: # API service name
+    Queue:
+      - "cptm8" # exchange_name
+      - "qasmm8" # queue_name
+      - "cptm8.asmm8.#" # binding_key
+      - 1 # prefetch count
+    Queue-arguments:
+      "x-max-length": 1 # x-queue-type, x-max-length, x-max-length-bytes, x-overflow, x-message-ttl, x-expires, x-max-age, x-stream-max-segment-size-bytes, x-queue-version, x-consumer-timeout, x-single-active-consumer
+      "x-overflow": "reject-publish"
+    Consumer:
+      - "qasmm8"  # queue name
+      - "casmm8"  # consumer name
+      - "false"   # autoack
+      - "apicall" # handle type: apicall or notification
+  naabum8: # API service name
+    Queue:
+      - cptm8 # exchange_name
+ASMM8:
+  runType: fast   # Set to either fast (passive enum) or complete (active enumeration).
+  activeWordList: subdomainslite.txt # Wordlist file in the wordlist folder
+  activeThreads: 100
+Database: # PostgreSQL connection details
+  location: "hostname"
+  port: 5432
+  schema: "public"
+  database: "databasename"
+  username: "dbuser"
+  password: "dbpass"
+RabbitMQ: # RabbitMQ connection details
+  location: "hostname"
+  port: 5672
+  username: "user"
+  password: "pass"

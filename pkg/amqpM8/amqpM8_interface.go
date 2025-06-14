@@ -5,7 +5,7 @@ import (
 )
 
 type AmqpM8Interface interface {
-	AddHandler(action string, handler func(msg amqp.Delivery) error)
+	AddHandler(queueName string, handler func(msg amqp.Delivery) error)
 	GetChannel() *amqp.Channel
 	GetQueues() map[string]map[string]amqp.Queue
 	GetBindings() map[string]map[string]string
@@ -21,7 +21,7 @@ type AmqpM8Interface interface {
 	DeclareExchange(exchangeName string, exchangeType string) error
 	DeclareQueueAndBind(exchangeName string, queueName string, bindingKey string, prefetchCount int, queueArgs amqp.Table) error
 	Publish(exchangeName string, routingKey string, payload any) error
-	Consume(consumerName, queueName, handleType string, autoACK bool) error
+	Consume(consumerName, queueName string, autoACK bool) error
 	ExistQueue(queueName string, queueArgs amqp.Table) bool
 	DeleteQueue(queueName string) error
 	CancelConsumer(consumerName string) error

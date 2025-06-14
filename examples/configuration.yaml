@@ -27,7 +27,6 @@ ORCHESTRATORM8:
       - "qasmm8"  # queue name
       - "casmm8"  # consumer name
       - "false"   # autoack
-      - "apicall" # handle type: apicall or notification
   naabum8: # API service name
     Queue:
       - cptm8 # exchange_name

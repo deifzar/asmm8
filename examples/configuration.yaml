@@ -18,8 +18,9 @@ ORCHESTRATORM8:
     Queue:
       - "cptm8" # exchange_name
       - "qasmm8" # queue_name
-      - "cptm8.asmm8.#" # binding_key
       - 1 # prefetch count
+    Routing-keys:
+      - "cptm8.asmm8.#" # binding key
     Queue-arguments:
       "x-max-length": 1 # x-queue-type, x-max-length, x-max-length-bytes, x-overflow, x-message-ttl, x-expires, x-max-age, x-stream-max-segment-size-bytes, x-queue-version, x-consumer-timeout, x-single-active-consumer
       "x-overflow": "reject-publish"

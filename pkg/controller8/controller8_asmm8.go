@@ -3,6 +3,7 @@ package controller8
 import (
 	"database/sql"
 	"deifzar/asmm8/pkg/active"
+	"deifzar/asmm8/pkg/notification8"
 	"deifzar/asmm8/pkg/orchestrator8"
 
 	// "deifzar/asmm8/pkg/configparser"
@@ -47,14 +48,15 @@ func (m *Controller8ASSM8) LaunchScan(c *gin.Context) {
 		get, err := domain8.GetAllEnabled()
 		if err != nil {
 			// move on and call naabum8 scan
-			orchestrator8.PublishMessageToExchangeAndCloseChannelConnection(exchange, "cptm8.naabum8.get.scan")
 			log8.BaseLogger.Error().Msg("HTTP 500 Response - ASM8 Full scans failed - Error fetching all domains from DB to launch scan.")
+			orchestrator8.PublishToExchangeAndCloseChannelConnection(exchange, "cptm8.naabum8.get.scan", nil, "asmm8")
+			notification8.Helper.PublishSysErrorNotification("LaunchScan - Error fetching all domains from DB to launch scan", "urgent", "asmm8")
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "msg": "ASM8 Scans failed. Error fetching all domains from DB to launch scan."})
 			return
 		}
 		if len(get) < 1 {
-			// move on and call naabum8 scan
-			orchestrator8.PublishMessageToExchangeAndCloseChannelConnection(exchange, "cptm8.naabum8.get.scan")
+			// no domains enabled - move on and call naabum8 scan
+			orchestrator8.PublishToExchangeAndCloseChannelConnection(exchange, "cptm8.naabum8.get.scan", nil, "asmm8")
 			log8.BaseLogger.Info().Msg("ASM8 full scans API call success. No targets in scope")
 			c.JSON(http.StatusOK, gin.H{"status": "success", "msg": "ASM8 full scans finished. No target in scope"})
 			return
@@ -63,29 +65,22 @@ func (m *Controller8ASSM8) LaunchScan(c *gin.Context) {
 		err = utils.InstallTools()
 		if err != nil {
 			// move on and call naabum8 scan
-			orchestrator8.PublishMessageToExchangeAndCloseChannelConnection(exchange, "cptm8.naabum8.get.scan")
 			log8.BaseLogger.Error().Msg("HTTP 500 Response - ASM8 Full scans failed - Error during tools installation!")
+			orchestrator8.PublishToExchangeAndCloseChannelConnection(exchange, "cptm8.naabum8.get.scan", nil, "asmm8")
+			notification8.Helper.PublishSysErrorNotification("LaunchScan - Error during tools installation", "urgent", "asmm8")
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "msg": "Launching Full scans is not possible at this moment due to interal errors ocurring during the tools installation. Please, check the notification."})
 			return
 		}
-		// // cancel consumer
-		// err = orchestrator8.DeactivateConsumerByService("asmm8")
-		// if err != nil {
-		// 	// move on and call naabum8 scan
-		// 	orchestrator8.PublishMessageToExchangeAndCloseChannelConnection(queue_publisher[0], "cptm8.naabum8.get.scan")
-		// 	log8.BaseLogger.Error().Msg("HTTP 500 Response - ASM8 Full scans failed - Error cancelling the RabbitMQ consumer for `asmm8` before launching scan.")
-		// 	c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "msg": "ASM8 Full scans failed. Error cancelling the RabbitMQ consumer."})
-		// 	return
-		// }
 		log8.BaseLogger.Info().Msg("ASM8 full scans API call success")
 		c.JSON(http.StatusOK, gin.H{"status": "success", "msg": "Launching ASM8 full scans. Please, check the notification."})
 		// run active.
 		go m.Active(true, orchestrator8, get)
 	} else {
 		// move on and call naabum8 scan
-		orchestrator8.PublishMessageToExchangeAndCloseChannelConnection(exchange, "cptm8.naabum8.get.scan")
-		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "msg": "HTTP 500 Response - ASMM8 scans failed - Launching ASMM8 Full scans are not possible at this moment due to non-existent RabbitMQ queues."})
 		log8.BaseLogger.Info().Msg("Full scans API call cannot launch the scans at this moment - RabbitMQ queues do not exist.")
+		orchestrator8.PublishToExchangeAndCloseChannelConnection(exchange, "cptm8.naabum8.get.scan", nil, "asmm8")
+		notification8.Helper.PublishSysErrorNotification("LaunchScan - Full scans API call cannot launch the scans at this moment - RabbitMQ queues do not exist.", "urgent", "asmm8")
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "msg": "HTTP 500 Response - ASMM8 scans failed - Launching ASMM8 Full scans are not possible at this moment due to non-existent RabbitMQ queues."})
 		return
 	}
 }
@@ -101,6 +96,7 @@ func (m *Controller8ASSM8) LaunchActive(c *gin.Context) {
 		return
 	}
 	if len(get) < 1 {
+		// no domains enabled
 		log8.BaseLogger.Info().Msg("ASMM8 Active scans API call success. No targets in scope")
 		c.JSON(http.StatusOK, gin.H{"status": "success", "msg": "ASMM8 Active scans finished. No target in scope"})
 		return
@@ -129,6 +125,7 @@ func (m *Controller8ASSM8) LaunchPassive(c *gin.Context) {
 		return
 	}
 	if len(get) < 1 {
+		// no domains enabled
 		log8.BaseLogger.Info().Msg("ASMM8 Pasive scans API call success. No targets in scope")
 		c.JSON(http.StatusOK, gin.H{"status": "success", "msg": "ASMM8 Pasive scans finished. No target in scope"})
 		return
@@ -156,6 +153,7 @@ func (m *Controller8ASSM8) LauchCheckLive(c *gin.Context) {
 		return
 	}
 	if len(get) < 1 {
+		// no domains enabled
 		log8.BaseLogger.Info().Msg("ASMM8 Check Live scans API call success. No targets in scope")
 		c.JSON(http.StatusOK, gin.H{"status": "success", "msg": "ASMM8 Check Live scans finished. No target in scope"})
 		return
@@ -182,6 +180,7 @@ func (m *Controller8ASSM8) Active(fullScan bool, orch8 orchestrator8.Orchestrato
 	ActiveRunner.Subdomains = make(map[string][]string)
 	prevResults := make(map[string][]string)
 	var err error
+	var changes_occurred bool = false
 
 	for _, d8 := range target {
 		PassiveRunner.SeedDomains = append(PassiveRunner.SeedDomains, d8.Name)
@@ -220,16 +219,25 @@ func (m *Controller8ASSM8) Active(fullScan bool, orch8 orchestrator8.Orchestrato
 	log8.BaseLogger.Info().Msg("Active scans: Updating results in database.")
 	hostname8 := db8.NewDb8Hostname8(m.Db)
 	for _, d8 := range target {
-		_, err := hostname8.InsertBatch(d8.Id, scandefaultenabled, ActiveRunner.Subdomains[d8.Name])
+		notify, err := hostname8.InsertBatch(d8.Id, scandefaultenabled, ActiveRunner.Subdomains[d8.Name])
 		if err != nil {
 			log8.BaseLogger.Debug().Msg(err.Error())
 			log8.BaseLogger.Warn().Msgf("Active scans: error inserting batch for `%s`", d8.Name)
 		}
+		if !changes_occurred && notify {
+			changes_occurred = true
+		}
 	}
 	if fullScan {
 		// call naabum8 scan
-		exchange := m.Config.GetStringSlice("ORCHESTRATORM8.naabum8.Queue")[0]
-		orch8.PublishMessageToExchangeAndCloseChannelConnection(exchange, "cptm8.naabum8.get.scan")
+		cptm8_exchange := m.Config.GetStringSlice("ORCHESTRATORM8.naabum8.Queue")[0]
+		orch8.PublishToExchangeAndCloseChannelConnection(cptm8_exchange, "cptm8.naabum8.get.scan", nil, "asmm8")
+		if changes_occurred {
+			// send notification
+			notification8.Helper.PublishSecurityNotificationAdmin("New hostnames have been found", "normal", "asmm8")
+			notification8.Helper.PublishSecurityNotificationUser("New hostnames have been found", "normal", "asmm8")
+		}
+
 	}
 	// Scans have finished.
 	log8.BaseLogger.Info().Msg("Active scans: Active scan has concluded.")
@@ -268,10 +276,14 @@ func (m *Controller8ASSM8) Passive(target []model8.Domain8) {
 	log8.BaseLogger.Info().Msg("Passive scans: Updating results in database.")
 	hostname8 := db8.NewDb8Hostname8(m.Db)
 	for _, d8 := range target {
-		_, err := hostname8.InsertBatch(d8.Id, scandefaultenabled, PassiveRunner.Subdomains[d8.Name])
+		notify, err := hostname8.InsertBatch(d8.Id, scandefaultenabled, PassiveRunner.Subdomains[d8.Name])
 		if err != nil {
 			log8.BaseLogger.Debug().Msg(err.Error())
 			log8.BaseLogger.Warn().Msgf("Passive scans: error inserting batch for `%s`", d8.Name)
+		}
+		if notify {
+			// send notification to rabbitMQ
+			log8.BaseLogger.Info().Msgf("`%t`", notify)
 		}
 	}
 	//

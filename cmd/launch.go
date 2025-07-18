@@ -6,6 +6,7 @@ package cmd
 import (
 	"deifzar/asmm8/pkg/api8"
 	"deifzar/asmm8/pkg/log8"
+	"deifzar/asmm8/pkg/notification8"
 	"deifzar/asmm8/pkg/utils"
 	"errors"
 	"fmt"
@@ -47,6 +48,7 @@ var launchCmd = &cobra.Command{
 			if err != nil {
 				log8.BaseLogger.Debug().Msg(err.Error())
 				log8.BaseLogger.Fatal().Msg("Error in `Launch` command line when initialising the API endpoint.")
+				notification8.Helper.PublishSysErrorNotification("Error in `Launch` command line when initialising the API endpoint", "urgent", "asmm8")
 				return err
 			}
 			a.Routes()

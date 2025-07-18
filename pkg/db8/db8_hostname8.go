@@ -252,38 +252,52 @@ func (m *Db8Hostname8) InsertHostname(domainid uuid.UUID, post model8.PostHostna
 }
 
 // InsertBatch (domainid, enabled, names)
-func (m *Db8Hostname8) InsertBatch(domainid uuid.UUID, enabled bool, names []string) ([]uuid.UUID, error) {
+func (m *Db8Hostname8) InsertBatch(domainid uuid.UUID, enabled bool, names []string) (bool, error) {
+	var changes_occurred bool = false
 	tx, err := m.Db.Begin()
 	if err != nil {
-		return nil, err
+		return false, err
 	}
-	stmt, err := tx.Prepare("INSERT INTO cptm8hostname(name, foundfirsttime, live, enabled, domainid) VALUES ($1, NOW(), true, $2, $3) ON CONFLICT (name) DO UPDATE SET live = EXCLUDED.live")
+	
+	// Modified SQL to return information about what happened
+	stmt, err := tx.Prepare(`
+		INSERT INTO cptm8hostname(name, foundfirsttime, live, enabled, domainid) 
+		VALUES ($1, NOW(), true, $2, $3) 
+		ON CONFLICT (name) DO UPDATE SET 
+			live = EXCLUDED.live
+		WHERE cptm8hostname.live != EXCLUDED.live
+	`)
 	if err != nil {
 		log8.BaseLogger.Debug().Msg(err.Error())
-		return nil, err
+		return false, err
 	}
 	defer stmt.Close()
+	
 	var err2 error
 	for _, n := range names {
-		_, err2 = stmt.Exec(n, enabled, domainid)
+		result, err2 := stmt.Exec(n, enabled, domainid)
 		if err2 != nil {
 			_ = tx.Rollback()
 			log8.BaseLogger.Debug().Msg(err2.Error())
-			return nil, err2
+			return false, err2
+		}
+		
+		// Check if any rows were affected (new insert or live status changed)
+		if !changes_occurred {
+			rows, _ := result.RowsAffected()
+			if rows > 0 {
+				changes_occurred = true
+			}
 		}
 	}
+	
 	err2 = tx.Commit()
 	if err2 != nil {
 		_ = tx.Rollback()
 		log8.BaseLogger.Debug().Msg(err2.Error())
-		return nil, err2
+		return false, err2
 	}
-	ids, err := m.GetAllHostnameIDsByDomainid(domainid)
-	if err != nil {
-		log8.BaseLogger.Debug().Msg(err.Error())
-		return nil, err
-	}
-	return ids, nil
+	return changes_occurred, nil
 }
 
 func (m *Db8Hostname8) UpdateHostname(domainid, id uuid.UUID, post model8.PostHostname8) (model8.Hostname8, error) {

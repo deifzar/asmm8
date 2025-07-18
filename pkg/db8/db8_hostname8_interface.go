@@ -8,7 +8,8 @@ import (
 
 type Db8Hostname8Interface interface {
 	InsertHostname(uuid.UUID, model8.PostHostname8) (uuid.UUID, error)
-	InsertBatch(uuid.UUID, bool, []string) ([]uuid.UUID, error)
+	// return true or false if changes have occured
+	InsertBatch(uuid.UUID, bool, []string) (bool, error)
 	GetAllHostname() ([]model8.Hostname8, error)
 	GetAllHostnameByDomainid(uuid.UUID) ([]model8.Hostname8, error)
 	GetAllHostnameIDsByDomainid(uuid.UUID) ([]uuid.UUID, error)

@@ -1,5 +1,5 @@
 # binary file
-/assm8
+/asmm8
 
 # configuration files
 /configuration.yaml
@@ -9,6 +9,9 @@
 
 # other session files
 resume.cfg
+
+# app folder
+app/*
 
 # bin folder
 bin/*

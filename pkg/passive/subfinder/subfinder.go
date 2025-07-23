@@ -11,7 +11,7 @@ import (
 
 func RunSubfinderIn(seedDomain string, results chan<- string, wg *sync.WaitGroup) {
 	defer wg.Done()
-	log8.BaseLogger.Info().Msgf("Runing `Subfinder` on %s\n", seedDomain)
+	log8.BaseLogger.Info().Msgf("Running `Subfinder` on %s\n", seedDomain)
 	var out, outerr bytes.Buffer
 	cmd := exec.Command("subfinder", "-d", seedDomain, "-silent", "-all", "-config", "./subfinderconfig.yaml", "-pc", "./subfinderprovider-config.yaml")
 	cmd.Stdout = &out

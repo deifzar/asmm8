@@ -13,7 +13,7 @@ import (
 
 func RunAlterxIn(seedDomain string, threads int, input string, output string, results chan<- string, wg *sync.WaitGroup) {
 	defer wg.Done()
-	log8.BaseLogger.Info().Msgf("Runing DNS Permutations for %s\n", seedDomain)
+	log8.BaseLogger.Info().Msgf("Running DNS Permutations for %s\n", seedDomain)
 	var out, outerr bytes.Buffer
 	cmd := exec.Command("alterx", "-l", input, "-silent", "-o", output)
 	cmd.Stdout = &out

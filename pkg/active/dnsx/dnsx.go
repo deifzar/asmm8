@@ -14,7 +14,7 @@ import (
 
 func RunDnsxIn(seedDomain string, wordlist string, threads int, results chan<- string, wg *sync.WaitGroup) {
 	defer wg.Done()
-	log8.BaseLogger.Info().Msgf("Runing DNS Bruteforce for %s", seedDomain)
+	log8.BaseLogger.Info().Msgf("Running DNS Bruteforce for %s", seedDomain)
 	var out, outerr bytes.Buffer
 	cmd := exec.Command("dnsx", "-d", seedDomain, "-silent", "-w", wordlist, "-a", "-cname", "-aaaa", "-t", strconv.Itoa(threads))
 	cmd.Stdout = &out
@@ -56,7 +56,7 @@ func RunDnsxOut(seedDomain string, results <-chan string, r *model8.Result8, wg 
 }
 
 func RunDnsxConfirmLiveSubdomains(subdomains map[string][]string, threads int) map[string][]string {
-	log8.BaseLogger.Info().Msgf("Runing DNS check!")
+	log8.BaseLogger.Info().Msgf("Running DNS check!")
 	var results = make(map[string][]string)
 	for domain, list := range subdomains {
 		utils.WriteTempFile("./tmp/subdomains.txt", list)

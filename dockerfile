@@ -10,7 +10,7 @@ RUN go install github.com/projectdiscovery/dnsx/cmd/dnsx@v1.2.2
 RUN go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@v2.7.0
 
 # Release
-FROM alpine:3.20.3
+FROM alpine:3.22.1
 COPY --from=build-env /app/asmm8 /usr/local/bin/
 COPY --from=build-env /go/bin/alterx /usr/local/bin/
 COPY --from=build-env /go/bin/dnsx /usr/local/bin/

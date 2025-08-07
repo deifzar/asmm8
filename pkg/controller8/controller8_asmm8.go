@@ -208,7 +208,7 @@ func (m *Controller8ASSM8) Active(fullScan bool, orch8 orchestrator8.Orchestrato
 	log8.BaseLogger.Info().Msg("Active scans: Fetching scan settings for newly found hostnames from database.")
 	generalscansettings8 := db8.NewDb8Generalsettingsscan8(m.Db)
 	settings, err := generalscansettings8.Get()
-	var scandefaultenabled bool = false
+	var scandefaultenabled bool = true
 	if err != nil {
 		log8.BaseLogger.Debug().Msg(err.Error())
 		log8.BaseLogger.Warn().Msgf("Active scans: error fetching scan settings for newly found hostnames. Set value to `false` by default")
@@ -264,7 +264,7 @@ func (m *Controller8ASSM8) Passive(target []model8.Domain8) {
 	log8.BaseLogger.Info().Msg("Active scans: Fetching scan settings for newly found hostnames from database.")
 	generalscansettings8 := db8.NewDb8Generalsettingsscan8(m.Db)
 	settings, err := generalscansettings8.Get()
-	var scandefaultenabled bool = false
+	var scandefaultenabled bool = true
 	if err != nil {
 		log8.BaseLogger.Debug().Msg(err.Error())
 		log8.BaseLogger.Warn().Msgf("Active scans: error fetching scan settings for newly found hostnames. Set value to `false` by default")

@@ -1,8 +1,17 @@
-FROM alpine:3.22.1
-RUN apk add build-base
-COPY asmm8 /usr/local/bin/
-COPY alterx /usr/local/bin/
-COPY dnsx /usr/local/bin/
-COPY subfinder /usr/local/bin/
+FROM alpine:3.20
+# Security updates and minimal runtime dependencies
+RUN apk --no-cache add ca-certificates tzdata \
+    && apk --no-cache upgrade \
+    && rm -rf /var/cache/apk/* \
+    && adduser -D -g '' -s /bin/sh appuser
+
+COPY --chown=appuser:appuser asmm8 /usr/local/bin/
+COPY --chown=appuser:appuser alterx /usr/local/bin/
+COPY --chown=appuser:appuser dnsx /usr/local/bin/
+COPY --chown=appuser:appuser subfinder /usr/local/bin/
+
+# Security: Switch to non-root user
+USER appuser
+
 WORKDIR /app
 CMD ["asmm8","launch"]

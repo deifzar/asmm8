@@ -13,5 +13,13 @@ COPY --chown=appuser:appuser subfinder /usr/local/bin/
 # Security: Switch to non-root user
 USER appuser
 
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD asmm8 --help || exit 1
+
 WORKDIR /app
+
+# Expose port (document the port used)
+EXPOSE 8000
+
 CMD ["asmm8","launch"]

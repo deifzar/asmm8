@@ -54,4 +54,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 EXPOSE 8000
 
 # Use exec form for better signal handling
-CMD ["asmm8", "launch"]
+CMD ["asmm8", "help"]

@@ -3,7 +3,7 @@
 FROM golang:1.23-alpine3.20 AS builder
 # RUN apk add build-base
 # Install only required build dependencies
-RUN apk add --no-cache git ca-certificates tzdata \
+RUN apk update && apk add --no-cache git ca-certificates tzdata \
     && adduser -D -g '' appuser
 WORKDIR /app
 

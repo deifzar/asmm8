@@ -1,7 +1,5 @@
 # Build
-# FROM golang:1.24.0-alpine AS build-env
 FROM golang:1.23-alpine3.20 AS builder
-# RUN apk add build-base
 # Install only required build dependencies
 RUN apk update && apk add --no-cache git ca-certificates tzdata \
     && adduser -D -g '' appuser
@@ -14,15 +12,11 @@ RUN go mod download
 # Copy source code (use .dockerignore to exclude sensitive files)
 COPY . .
 
-# RUN go mod download
-# RUN go build .
-
 # Build with security flags
 RUN CGO_ENABLED=0 GOOS=linux go build \
     -ldflags='-w -s -extldflags "-static"' \
     -a -installsuffix cgo \
     -o asmm8 .
-
 
 RUN go install github.com/projectdiscovery/alterx/cmd/alterx@v0.0.4 && \
     go install github.com/projectdiscovery/dnsx/cmd/dnsx@v1.2.2 && \
@@ -50,8 +44,14 @@ USER appuser
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD asmm8 --help || exit 1
 
+# Metadata
+LABEL maintainer="i@deifzar.me" \
+    version="1.0" \
+    description="ASMM8 - Hardened Hostname Discovery Scanner (Runtime)" \
+    security.scan="required-non-root-privileges"
+
 # Expose port (document the port used)
-EXPOSE 8000
+# EXPOSE 8000
 
 # Use exec form for better signal handling
 CMD ["asmm8", "help"]

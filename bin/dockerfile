@@ -1,14 +1,21 @@
 FROM alpine:3.20
 # Security updates and minimal runtime dependencies
-RUN apk --no-cache add ca-certificates tzdata \
+RUN apk --no-cache add ca-certificates tzdata gettext \
     && apk --no-cache upgrade \
     && rm -rf /var/cache/apk/* \
     && adduser -D -g '' -s /bin/sh appuser
+
+WORKDIR /app
 
 COPY --chown=appuser:appuser asmm8 /usr/local/bin/
 COPY --chown=appuser:appuser alterx /usr/local/bin/
 COPY --chown=appuser:appuser dnsx /usr/local/bin/
 COPY --chown=appuser:appuser subfinder /usr/local/bin/
+COPY --chown=appuser:appuser docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Set ownership of the app directory
+RUN chown -R appuser:appuser /app
 
 # Security: Switch to non-root user
 USER appuser
@@ -23,9 +30,11 @@ LABEL maintainer="i@deifzar.me" \
     description="ASMM8 - Hardened Hostname Discovery Scanner (Runtime)" \
     security.scan="required-non-root-privileges"
 
-WORKDIR /app
 
 # Expose port (document the port used)
 EXPOSE 8000
+
+# Use custom entrypoint for secret loading 
+ENTRYPOINT ["docker-entrypoint.sh"]
 
 CMD ["asmm8","launch"]

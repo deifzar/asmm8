@@ -5,8 +5,10 @@ import (
 	"deifzar/asmm8/pkg/active"
 	"deifzar/asmm8/pkg/notification8"
 	"deifzar/asmm8/pkg/orchestrator8"
+	"time"
 
 	// "deifzar/asmm8/pkg/configparser"
+	"deifzar/asmm8/pkg/cleanup8"
 	"deifzar/asmm8/pkg/db8"
 	"deifzar/asmm8/pkg/log8"
 	"deifzar/asmm8/pkg/model8"
@@ -31,6 +33,12 @@ func NewController8ASSM8(db *sql.DB, config *viper.Viper) Controller8ASMM8Interf
 }
 
 func (m *Controller8ASSM8) LaunchScan(c *gin.Context) {
+	// Clean up old files in tmp directory (older than 24 hours)
+	cleanup := cleanup8.NewCleanup8()
+	if err := cleanup.CleanupDirectory("tmp", 24*time.Hour); err != nil {
+		log8.BaseLogger.Error().Err(err).Msg("Failed to cleanup tmp directory")
+		// Don't return error here as cleanup failure shouldn't prevent startup
+	}
 	// Check that RabbitMQ relevant Queue is available.
 	// If relevant queue does not exist, inform the user that there is one ASMM8 running at this moment and advise the user to wait for the latest results.
 	orchestrator8, err := orchestrator8.NewOrchestrator8()
@@ -86,6 +94,12 @@ func (m *Controller8ASSM8) LaunchScan(c *gin.Context) {
 }
 
 func (m *Controller8ASSM8) LaunchActive(c *gin.Context) {
+	// Clean up old files in tmp directory (older than 24 hours)
+	cleanup := cleanup8.NewCleanup8()
+	if err := cleanup.CleanupDirectory("tmp", 24*time.Hour); err != nil {
+		log8.BaseLogger.Error().Err(err).Msg("Failed to cleanup tmp directory")
+		// Don't return error here as cleanup failure shouldn't prevent startup
+	}
 	DB := m.Db
 	domain8 := db8.NewDb8Domain8(DB)
 	get, err := domain8.GetAllEnabled()
@@ -115,6 +129,12 @@ func (m *Controller8ASSM8) LaunchActive(c *gin.Context) {
 }
 
 func (m *Controller8ASSM8) LaunchPassive(c *gin.Context) {
+	// Clean up old files in tmp directory (older than 24 hours)
+	cleanup := cleanup8.NewCleanup8()
+	if err := cleanup.CleanupDirectory("tmp", 24*time.Hour); err != nil {
+		log8.BaseLogger.Error().Err(err).Msg("Failed to cleanup tmp directory")
+		// Don't return error here as cleanup failure shouldn't prevent startup
+	}
 	DB := m.Db
 	domain8 := db8.NewDb8Domain8(DB)
 	get, err := domain8.GetAllEnabled()
@@ -143,6 +163,12 @@ func (m *Controller8ASSM8) LaunchPassive(c *gin.Context) {
 }
 
 func (m *Controller8ASSM8) LauchCheckLive(c *gin.Context) {
+	// Clean up old files in tmp directory (older than 24 hours)
+	cleanup := cleanup8.NewCleanup8()
+	if err := cleanup.CleanupDirectory("tmp", 24*time.Hour); err != nil {
+		log8.BaseLogger.Error().Err(err).Msg("Failed to cleanup tmp directory")
+		// Don't return error here as cleanup failure shouldn't prevent startup
+	}
 	DB := m.Db
 	domain8 := db8.NewDb8Domain8(DB)
 	get, err := domain8.GetAllEnabled()

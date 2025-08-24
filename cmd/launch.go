@@ -63,7 +63,7 @@ var launchCmd = &cobra.Command{
 				log8.BaseLogger.Debug().Msg(err.Error())
 				log8.BaseLogger.Fatal().Msg("Error in `Launch` command line when initialising the API endpoint.")
 				// Use pool helper for notifications now
-				notification8.Helper.PublishSysErrorNotification("Error in `ASMM8 Launch` command line when initialising the API endpoint", "urgent", "asmm8")
+				notification8.PoolHelper.PublishSysErrorNotification("Error in `ASMM8 Launch` command line when initialising the API endpoint", "urgent", "asmm8")
 				amqpM8.CleanupConnectionPool()
 				return err
 			}

@@ -12,9 +12,9 @@ type Orchestrator8Interface interface {
 	// This method defines the actions that customers carry when messages get published to the `cptm8` exchange.
 	CreateHandleAPICallByService(service string) error
 	// New method that returns a dedicated connection with handler registered
-	CreateHandleAPICallByServiceWithConnection(service string) (amqpM8.PooledAmqpInterface, error)
-	// New method that uses existing connection
-	ActivateConsumerByServiceWithConnection(service string, conn amqpM8.PooledAmqpInterface) error
+	createHandleAPICallByServiceWithConnection(service string) (amqpM8.PooledAmqpInterface, error)
+	// New method that uses existing connection with auto-reconnect
+	activateConsumerByServiceWithReconnect(service string, conn amqpM8.PooledAmqpInterface) error
 	ActivateQueueByService(service string) error
 	ActivateConsumerByService(service string) error
 	DeactivateConsumerByService(service string) error

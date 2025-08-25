@@ -80,12 +80,7 @@ func (a *Api8) Init() error {
 		log8.BaseLogger.Error().Msg("Error bringing up the RabbitMQ queues for the `asmm8` service.")
 		return err
 	}
-	connRQ, err := orchestrator8.CreateHandleAPICallByServiceWithConnection("asmm8")
-	if err != nil {
-		log8.BaseLogger.Error().Msg("Error creating handler with dedicated connection for the `asmm8` service.")
-		return err
-	}
-	err = orchestrator8.ActivateConsumerByServiceWithConnection("asmm8", connRQ)
+	err = orchestrator8.ActivateConsumerByService("asmm8")
 	if err != nil {
 		log8.BaseLogger.Error().Msg("Error activating consumer with dedicated connection for the `asmm8` service.")
 		return err
@@ -120,6 +115,11 @@ func (a *Api8) Routes() {
 	r.GET("/scan/passive", contrASSM8.LaunchPassive)
 	r.GET("/scan/active", contrASSM8.LaunchActive)
 	r.GET("/scan/check", contrASSM8.LauchCheckLive)
+
+	// Health monitoring
+	contrHealth := controller8.NewController8Health(a.Config)
+	r.GET("/health/rabbitmq", contrHealth.GetRabbitMQHealth)
+	r.GET("/health/consumer/:consumer", contrHealth.GetConsumerHealth)
 
 	a.Router = r
 }

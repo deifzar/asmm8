@@ -46,6 +46,7 @@ type PooledAmqpInterface interface {
 	Publish(exchangeName string, routingKey string, payload any, source string) error
 	Consume(consumerName, queueName string, autoACK bool) error
 	ConsumeWithContext(ctx context.Context, consumerName, queueName string, autoACK bool) error
+	ConsumeWithReconnect(ctx context.Context, consumerName, queueName string, autoACK bool) error
 	ExistQueue(queueName string, queueArgs amqp.Table) bool
 	DeleteQueue(queueName string) error
 	CancelConsumer(consumerName string) error
@@ -409,6 +410,77 @@ func (w *PooledAmqp) ConsumeWithContext(ctx context.Context, consumerName, queue
 		}
 	}()
 
+	return nil
+}
+
+// ConsumeWithReconnect starts consuming messages with automatic reconnection on connection failure
+func (w *PooledAmqp) ConsumeWithReconnect(ctx context.Context, consumerName, queueName string, autoACK bool) error {
+	log8.BaseLogger.Info().Msgf("Starting consumer `%s` for queue `%s` with auto-reconnect", consumerName, queueName)
+	
+	go func() {
+		reconnectDelay := 5 * time.Second
+		maxReconnectDelay := 60 * time.Second
+		currentDelay := reconnectDelay
+
+		for {
+			select {
+			case <-ctx.Done():
+				log8.BaseLogger.Info().Msgf("Consumer `%s` shutting down gracefully due to context cancellation", consumerName)
+				return
+			default:
+				// Check if connection is healthy before attempting to consume
+				if !w.IsConnected() {
+					log8.BaseLogger.Warn().Msgf("Connection unhealthy for consumer `%s`, attempting to get new connection", consumerName)
+					
+					// Try to get a new connection
+					newConn, err := GetDefaultConnection()
+					if err != nil {
+						log8.BaseLogger.Error().Msgf("Failed to get new connection for consumer `%s`: %v. Retrying in %v", consumerName, err, currentDelay)
+						time.Sleep(currentDelay)
+						// Exponential backoff with max limit
+						currentDelay = time.Duration(float64(currentDelay) * 1.5)
+						if currentDelay > maxReconnectDelay {
+							currentDelay = maxReconnectDelay
+						}
+						continue
+					}
+					
+					// Update the pooled connection
+					if newPooledAmqp, ok := newConn.(*PooledAmqp); ok {
+						w.pooledConn = newPooledAmqp.pooledConn
+						log8.BaseLogger.Info().Msgf("Successfully obtained new connection for consumer `%s`", consumerName)
+					}
+				}
+
+				// Reset delay on successful connection
+				currentDelay = reconnectDelay
+
+				// Attempt to start consuming
+				err := w.ConsumeWithContext(ctx, consumerName, queueName, autoACK)
+				if err != nil {
+					log8.BaseLogger.Error().Msgf("Consumer `%s` for queue `%s` failed: %v. Reconnecting in %v", consumerName, queueName, err, currentDelay)
+					
+					// Mark connection as unhealthy
+					w.pooledConn.mu.Lock()
+					w.pooledConn.isHealthy = false
+					w.pooledConn.mu.Unlock()
+					
+					time.Sleep(currentDelay)
+					// Exponential backoff with max limit
+					currentDelay = time.Duration(float64(currentDelay) * 1.5)
+					if currentDelay > maxReconnectDelay {
+						currentDelay = maxReconnectDelay
+					}
+					continue
+				}
+				
+				// If we reach here, ConsumeWithContext has exited (shouldn't happen normally)
+				log8.BaseLogger.Warn().Msgf("Consumer `%s` for queue `%s` exited unexpectedly, will attempt reconnection", consumerName, queueName)
+				time.Sleep(currentDelay)
+			}
+		}
+	}()
+	
 	return nil
 }
 

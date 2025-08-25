@@ -2,6 +2,7 @@ package orchestrator8
 
 import (
 	"bytes"
+	"context"
 	amqpM8 "deifzar/asmm8/pkg/amqpM8"
 	"deifzar/asmm8/pkg/configparser"
 	"deifzar/asmm8/pkg/log8"
@@ -83,11 +84,11 @@ func (o *Orchestrator8) ExistQueue(queueName string, queueArgs amqp.Table) bool 
 }
 
 func (o *Orchestrator8) CreateHandleAPICallByService(service string) error {
-	_, err := o.CreateHandleAPICallByServiceWithConnection(service)
+	_, err := o.createHandleAPICallByServiceWithConnection(service)
 	return err
 }
 
-func (o *Orchestrator8) CreateHandleAPICallByServiceWithConnection(service string) (amqpM8.PooledAmqpInterface, error) {
+func (o *Orchestrator8) createHandleAPICallByServiceWithConnection(service string) (amqpM8.PooledAmqpInterface, error) {
 	handle := func(msg amqp.Delivery) error {
 		services := o.Config.GetStringMapString("ORCHESTRATORM8.Services")
 		routingKey := msg.RoutingKey // cptm8.asmm8.get.scan. or cptm.asmm8.post.scan or cptm8.naabum8.get.scan/domain/1337 or cptm8.num8.post.endpoint/17/scan
@@ -159,35 +160,36 @@ func (o *Orchestrator8) ActivateQueueByService(service string) error {
 }
 
 func (o *Orchestrator8) ActivateConsumerByService(service string) error {
-	// Use the new method that gets a dedicated connection first
-	conn, err := o.CreateHandleAPICallByServiceWithConnection(service)
+	// Use the new method with auto-reconnect for better reliability
+	conn, err := o.createHandleAPICallByServiceWithConnection(service)
 	if err != nil {
 		return err
 	}
-	return o.ActivateConsumerByServiceWithConnection(service, conn)
+	return o.activateConsumerByServiceWithReconnect(service, conn)
 }
 
-func (o *Orchestrator8) ActivateConsumerByServiceWithConnection(service string, conn amqpM8.PooledAmqpInterface) error {
-	log8.BaseLogger.Info().Msgf("Creating consumer for `%s` using existing connection...", service)
+func (o *Orchestrator8) activateConsumerByServiceWithReconnect(service string, conn amqpM8.PooledAmqpInterface) error {
+	log8.BaseLogger.Info().Msgf("Creating consumer with auto-reconnect for `%s` using existing connection...", service)
 	params := o.Config.GetStringSlice("ORCHESTRATORM8." + service + ".Consumer")
 
-	go func(p []string, am8 amqpM8.PooledAmqpInterface) {
-		qname := p[0]
-		cname := p[1]
-		autoACK, err := strconv.ParseBool(p[2])
-		if err != nil {
-			log8.BaseLogger.Warn().Msgf("setting autoACK to `false` due to failure parsing config autoACK value from queue `%s`", qname)
-			autoACK = true
-		}
+	// Create a context that can be cancelled for graceful shutdown
+	ctx := context.Background()
 
-		err = am8.Consume(cname, qname, autoACK)
-		if err != nil {
-			log8.BaseLogger.Debug().Msg(err.Error())
-			log8.BaseLogger.Error().Msgf("error creating consumer for queue `%s`", qname)
-		} else {
-			log8.BaseLogger.Info().Msgf("Created consumer for queue `%s` using existing connection", qname)
-		}
-	}(params, conn)
+	qname := params[0]
+	cname := params[1]
+	autoACK, err := strconv.ParseBool(params[2])
+	if err != nil {
+		log8.BaseLogger.Warn().Msgf("setting autoACK to `false` due to failure parsing config autoACK value from queue `%s`", qname)
+		autoACK = true
+	}
+
+	err = conn.ConsumeWithReconnect(ctx, cname, qname, autoACK)
+	if err != nil {
+		log8.BaseLogger.Error().Msgf("error creating consumer with auto-reconnect for queue `%s`", qname)
+		return err
+	}
+
+	log8.BaseLogger.Info().Msgf("Created consumer with auto-reconnect for queue `%s` using existing connection", qname)
 	return nil
 }
 

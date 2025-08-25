@@ -59,7 +59,7 @@ func (a *Api8) Init() error {
 
 	var db db8.Db8
 	db.InitDatabase8(location, port, schema, database, username, password)
-	conn, err2 := db.OpenConnection()
+	connDB, err2 := db.OpenConnection()
 	if err2 != nil {
 		log8.BaseLogger.Error().Msg("Error connecting into DB.")
 		return err2
@@ -80,10 +80,18 @@ func (a *Api8) Init() error {
 		log8.BaseLogger.Error().Msg("Error bringing up the RabbitMQ queues for the `asmm8` service.")
 		return err
 	}
-	orchestrator8.CreateHandleAPICallByService("asmm8")
-	orchestrator8.ActivateConsumerByService("asmm8")
+	connRQ, err := orchestrator8.CreateHandleAPICallByServiceWithConnection("asmm8")
+	if err != nil {
+		log8.BaseLogger.Error().Msg("Error creating handler with dedicated connection for the `asmm8` service.")
+		return err
+	}
+	err = orchestrator8.ActivateConsumerByServiceWithConnection("asmm8", connRQ)
+	if err != nil {
+		log8.BaseLogger.Error().Msg("Error activating consumer with dedicated connection for the `asmm8` service.")
+		return err
+	}
 
-	a.DB = conn
+	a.DB = connDB
 	a.Config = v
 	return nil
 }

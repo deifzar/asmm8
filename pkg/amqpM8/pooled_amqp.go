@@ -73,12 +73,11 @@ type PooledAmqp struct {
 	pooledConn *PooledConnection
 	pool       *ConnectionPool
 
-	// Local state for this wrapper instance
-	queues    map[string]map[string]amqp.Queue
-	bindings  map[string]map[string][]string
-	exchanges map[string]string
+	// Shared state across all pooled connections
+	sharedState *SharedAmqpState
+
+	// Local state for this wrapper instance (consumer-specific)
 	consumers map[string][]string
-	handlers  map[string]func(msg amqp.Delivery) error
 
 	// Consumer health monitoring (lightweight for pooled connections)
 	consumerHealth      map[string]*ConsumerHealth
@@ -91,11 +90,8 @@ func NewPooledAmqp(pooledConn *PooledConnection, pool *ConnectionPool) *PooledAm
 	return &PooledAmqp{
 		pooledConn:          pooledConn,
 		pool:                pool,
-		queues:              make(map[string]map[string]amqp.Queue),
-		bindings:            make(map[string]map[string][]string),
-		exchanges:           make(map[string]string),
+		sharedState:         GetSharedState(), // Use global shared state
 		consumers:           make(map[string][]string),
-		handlers:            make(map[string]func(msg amqp.Delivery) error),
 		consumerHealth:      make(map[string]*ConsumerHealth),
 		healthCheckInterval: 30 * time.Minute,
 	}
@@ -103,9 +99,7 @@ func NewPooledAmqp(pooledConn *PooledConnection, pool *ConnectionPool) *PooledAm
 
 // AddHandler adds a message handler for a queue
 func (w *PooledAmqp) AddHandler(queueName string, handler func(msg amqp.Delivery) error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	w.handlers[queueName] = handler
+	w.sharedState.AddHandler(queueName, handler)
 }
 
 // GetChannel returns the underlying AMQP channel
@@ -115,91 +109,57 @@ func (w *PooledAmqp) GetChannel() *amqp.Channel {
 
 // GetQueues returns the queues map
 func (w *PooledAmqp) GetQueues() map[string]map[string]amqp.Queue {
-	w.mu.RLock()
-	defer w.mu.RUnlock()
-	return w.queues
+	return w.sharedState.GetQueues()
 }
 
 // GetBindings returns the bindings map
 func (w *PooledAmqp) GetBindings() map[string]map[string][]string {
-	w.mu.RLock()
-	defer w.mu.RUnlock()
-	return w.bindings
+	return w.sharedState.GetBindings()
 }
 
 // GetExchanges returns the exchanges map
 func (w *PooledAmqp) GetExchanges() map[string]string {
-	w.mu.RLock()
-	defer w.mu.RUnlock()
-	return w.exchanges
+	return w.sharedState.GetExchanges()
 }
 
 // GetExchangeTypeByExchangeName returns the exchange type for a given exchange name
 func (w *PooledAmqp) GetExchangeTypeByExchangeName(exchangeName string) string {
-	w.mu.RLock()
-	defer w.mu.RUnlock()
-	return w.exchanges[exchangeName]
+	return w.sharedState.GetExchangeTypeByExchangeName(exchangeName)
 }
 
 // GetQueueByExchangeNameAndQueueName returns a queue by exchange and queue name
 func (w *PooledAmqp) GetQueueByExchangeNameAndQueueName(exchangeName string, queuename string) amqp.Queue {
-	w.mu.RLock()
-	defer w.mu.RUnlock()
-	if exchangeQueues, exists := w.queues[exchangeName]; exists {
-		return exchangeQueues[queuename]
-	}
-	return amqp.Queue{}
+	return w.sharedState.GetQueueByExchangeNameAndQueueName(exchangeName, queuename)
 }
 
 // GetBindingsByExchangeNameAndQueueName returns bindings for a queue
 func (w *PooledAmqp) GetBindingsByExchangeNameAndQueueName(exchangeName string, queuename string) []string {
-	w.mu.RLock()
-	defer w.mu.RUnlock()
-	if exchangeBindings, exists := w.bindings[exchangeName]; exists {
-		return exchangeBindings[queuename]
-	}
-	return nil
+	return w.sharedState.GetBindingsByExchangeNameAndQueueName(exchangeName, queuename)
 }
 
 // GetConsumerByName returns consumer info by name
 func (w *PooledAmqp) GetConsumerByName(consumerName string) []string {
-	w.mu.RLock()
-	defer w.mu.RUnlock()
-	return w.consumers[consumerName]
+	return w.sharedState.GetConsumerByName(consumerName)
 }
 
 // SetExchange sets an exchange
 func (w *PooledAmqp) SetExchange(exchangeName string, exchangeType string) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	w.exchanges[exchangeName] = exchangeType
+	w.sharedState.SetExchange(exchangeName, exchangeType)
 }
 
 // SetQueueByExchangeName sets a queue for an exchange
 func (w *PooledAmqp) SetQueueByExchangeName(exchangeName string, queueName string, queue amqp.Queue) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	if w.queues[exchangeName] == nil {
-		w.queues[exchangeName] = make(map[string]amqp.Queue)
-	}
-	w.queues[exchangeName][queueName] = queue
+	w.sharedState.SetQueueByExchangeName(exchangeName, queueName, queue)
 }
 
 // SetBindingQueueByExchangeName sets binding keys for a queue
 func (w *PooledAmqp) SetBindingQueueByExchangeName(exchangeName string, queueName string, bindingKeys []string) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	if w.bindings[exchangeName] == nil {
-		w.bindings[exchangeName] = make(map[string][]string)
-	}
-	w.bindings[exchangeName][queueName] = bindingKeys
+	w.sharedState.SetBindingQueueByExchangeName(exchangeName, queueName, bindingKeys)
 }
 
 // SetConsumers sets the consumers map
 func (w *PooledAmqp) SetConsumers(c map[string][]string) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	w.consumers = c
+	w.sharedState.SetConsumers(c)
 }
 
 // DeclareExchange declares an exchange
@@ -225,15 +185,8 @@ func (w *PooledAmqp) DeclareExchange(exchangeName string, exchangeType string) e
 	log8.BaseLogger.Info().Msgf("Exchange successfully created with name `%s`", exchangeName)
 	w.SetExchange(exchangeName, exchangeType)
 
-	// Initialize maps for this exchange
-	w.mu.Lock()
-	if w.queues[exchangeName] == nil {
-		w.queues[exchangeName] = make(map[string]amqp.Queue)
-	}
-	if w.bindings[exchangeName] == nil {
-		w.bindings[exchangeName] = make(map[string][]string)
-	}
-	w.mu.Unlock()
+	// Initialize maps for this exchange in shared state
+	w.sharedState.InitializeExchange(exchangeName)
 
 	return nil
 }
@@ -437,7 +390,7 @@ func (w *PooledAmqp) ConsumeWithContext(ctx context.Context, consumerName, queue
 
 				w.updateConsumerLastSeen(consumerName)
 
-				if handler := w.handlers[queueName]; handler != nil {
+				if handler, exists := w.sharedState.GetHandler(queueName); exists {
 					if err := handler(msg); err != nil {
 						log8.BaseLogger.Error().Msgf("Handler error for queue `%s`: %v", queueName, err)
 						w.updateConsumerHealth(consumerName, true, 1, 1)

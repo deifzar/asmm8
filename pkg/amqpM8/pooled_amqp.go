@@ -6,6 +6,7 @@ import (
 	"deifzar/asmm8/pkg/model8"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -163,6 +164,11 @@ func (w *PooledAmqp) SetConsumers(c map[string][]string) {
 	w.sharedState.SetConsumers(c)
 }
 
+// DeleteConsumerByName delete consumer name from consumers map
+func (w *PooledAmqp) DeleteConsumerByName(cname string) {
+	w.sharedState.DeleteConsumerByName(cname)
+}
+
 // DeclareExchange declares an exchange
 func (w *PooledAmqp) DeclareExchange(exchangeName string, exchangeType string) error {
 	if exchangeName == "" || exchangeType == "" {
@@ -284,6 +290,8 @@ func (w *PooledAmqp) DeleteQueue(queueName string) error {
 		log8.BaseLogger.Warn().Msgf("Queue `%s` cannot be deleted", queueName)
 		return err
 	}
+	// Delete relevant shared states values
+	w.sharedState.DeleteQueueByName(queueName)
 
 	log8.BaseLogger.Info().Msgf("Queue `%s` deleted", queueName)
 	return nil
@@ -297,6 +305,8 @@ func (w *PooledAmqp) CancelConsumer(consumerName string) error {
 		log8.BaseLogger.Warn().Msgf("Consumer `%s` cannot be cancelled", consumerName)
 		return err
 	}
+	// Delete relevant shared state values
+	w.sharedState.DeleteConsumerByName(consumerName)
 
 	log8.BaseLogger.Info().Msgf("Consumer `%s` cancelled", consumerName)
 	return nil
@@ -363,7 +373,7 @@ func (w *PooledAmqp) ConsumeWithContext(ctx context.Context, consumerName, queue
 	}
 
 	log8.BaseLogger.Info().Msgf("Success with consumer creation for queue `%s`", queueName)
-	w.registerConsumer(consumerName, queueName, autoACK)
+	w.registerConsumerHealth(consumerName, queueName, autoACK)
 
 	go func() {
 		defer func() {
@@ -416,7 +426,7 @@ func (w *PooledAmqp) ConsumeWithContext(ctx context.Context, consumerName, queue
 // ConsumeWithReconnect starts consuming messages with automatic reconnection on connection failure
 func (w *PooledAmqp) ConsumeWithReconnect(ctx context.Context, consumerName, queueName string, autoACK bool) error {
 	log8.BaseLogger.Info().Msgf("Starting consumer `%s` for queue `%s` with auto-reconnect", consumerName, queueName)
-	
+
 	go func() {
 		reconnectDelay := 5 * time.Second
 		maxReconnectDelay := 60 * time.Second
@@ -428,14 +438,17 @@ func (w *PooledAmqp) ConsumeWithReconnect(ctx context.Context, consumerName, que
 				log8.BaseLogger.Info().Msgf("Consumer `%s` shutting down gracefully due to context cancellation", consumerName)
 				return
 			default:
+				// Generate unique consumer tag for each attempt to avoid RabbitMQ conflicts
+				uniqueConsumerName := w.generateUniqueConsumerTag(consumerName)
+				log8.BaseLogger.Debug().Msgf("Using unique consumer tag `%s` for queue `%s`", uniqueConsumerName, queueName)
+
 				// Check if connection is healthy before attempting to consume
 				if !w.IsConnected() {
-					log8.BaseLogger.Warn().Msgf("Connection unhealthy for consumer `%s`, attempting to get new connection", consumerName)
-					
-					// Try to get a new connection
-					newConn, err := GetDefaultConnection()
-					if err != nil {
-						log8.BaseLogger.Error().Msgf("Failed to get new connection for consumer `%s`: %v. Retrying in %v", consumerName, err, currentDelay)
+					log8.BaseLogger.Warn().Msgf("Connection unhealthy for consumer `%s`, attempting to repair connection", uniqueConsumerName)
+
+					// Try to repair the connection instead of getting a new one
+					if err := w.repairConnection(); err != nil {
+						log8.BaseLogger.Error().Msgf("Failed to repair connection for consumer `%s`: %v. Retrying in %v", uniqueConsumerName, err, currentDelay)
 						time.Sleep(currentDelay)
 						// Exponential backoff with max limit
 						currentDelay = time.Duration(float64(currentDelay) * 1.5)
@@ -444,27 +457,23 @@ func (w *PooledAmqp) ConsumeWithReconnect(ctx context.Context, consumerName, que
 						}
 						continue
 					}
-					
-					// Update the pooled connection
-					if newPooledAmqp, ok := newConn.(*PooledAmqp); ok {
-						w.pooledConn = newPooledAmqp.pooledConn
-						log8.BaseLogger.Info().Msgf("Successfully obtained new connection for consumer `%s`", consumerName)
-					}
+
+					log8.BaseLogger.Info().Msgf("Successfully repaired connection for consumer `%s`", uniqueConsumerName)
 				}
 
 				// Reset delay on successful connection
 				currentDelay = reconnectDelay
 
-				// Attempt to start consuming
-				err := w.ConsumeWithContext(ctx, consumerName, queueName, autoACK)
+				// Attempt to start consuming with unique consumer tag
+				err := w.ConsumeWithContext(ctx, uniqueConsumerName, queueName, autoACK)
 				if err != nil {
-					log8.BaseLogger.Error().Msgf("Consumer `%s` for queue `%s` failed: %v. Reconnecting in %v", consumerName, queueName, err, currentDelay)
-					
+					log8.BaseLogger.Error().Msgf("Consumer `%s` for queue `%s` failed: %v. Reconnecting in %v", uniqueConsumerName, queueName, err, currentDelay)
+
 					// Mark connection as unhealthy
 					w.pooledConn.mu.Lock()
 					w.pooledConn.isHealthy = false
 					w.pooledConn.mu.Unlock()
-					
+
 					time.Sleep(currentDelay)
 					// Exponential backoff with max limit
 					currentDelay = time.Duration(float64(currentDelay) * 1.5)
@@ -473,14 +482,66 @@ func (w *PooledAmqp) ConsumeWithReconnect(ctx context.Context, consumerName, que
 					}
 					continue
 				}
-				
+
 				// If we reach here, ConsumeWithContext has exited (shouldn't happen normally)
-				log8.BaseLogger.Warn().Msgf("Consumer `%s` for queue `%s` exited unexpectedly, will attempt reconnection", consumerName, queueName)
+				log8.BaseLogger.Warn().Msgf("Consumer `%s` for queue `%s` exited unexpectedly, will attempt reconnection", uniqueConsumerName, queueName)
 				time.Sleep(currentDelay)
 			}
 		}
 	}()
-	
+
+	return nil
+}
+
+// generateUniqueConsumerTag creates a unique consumer tag to avoid RabbitMQ conflicts
+func (w *PooledAmqp) generateUniqueConsumerTag(baseConsumerName string) string {
+	timestamp := time.Now().UnixNano()
+	random := rand.Int63()
+	return fmt.Sprintf("%s-%d-%d", baseConsumerName, timestamp, random)
+}
+
+// repairConnection attempts to repair the current connection instead of getting a new one
+func (w *PooledAmqp) repairConnection() error {
+	log8.BaseLogger.Info().Msg("Attempting to repair connection")
+
+	w.pooledConn.mu.Lock()
+	defer w.pooledConn.mu.Unlock()
+
+	// Close existing connection and channel if they exist
+	if w.pooledConn.channel != nil {
+		w.pooledConn.channel.Close()
+		w.pooledConn.channel = nil
+	}
+	if w.pooledConn.conn != nil {
+		w.pooledConn.conn.Close()
+		w.pooledConn.conn = nil
+	}
+
+	// Get connection string from pool configuration
+	connString := w.pool.connString
+
+	// Create new connection
+	conn, err := amqp.Dial(connString)
+	if err != nil {
+		w.pooledConn.isHealthy = false
+		return fmt.Errorf("failed to dial RabbitMQ: %w", err)
+	}
+
+	// Create new channel
+	channel, err := conn.Channel()
+	if err != nil {
+		conn.Close()
+		w.pooledConn.isHealthy = false
+		return fmt.Errorf("failed to create channel: %w", err)
+	}
+
+	// Update the connection
+	w.pooledConn.conn = conn
+	w.pooledConn.channel = channel
+	w.pooledConn.isHealthy = true
+	w.pooledConn.lastUsed = time.Now()
+
+	log8.BaseLogger.Info().Msg("Connection repaired successfully")
 	return nil
 }
 
@@ -535,7 +596,7 @@ func (w *PooledAmqp) GetConnectionStatus() map[string]interface{} {
 }
 
 // Consumer health monitoring methods (simplified for pooled connections)
-func (w *PooledAmqp) registerConsumer(consumerName, queueName string, autoACK bool) {
+func (w *PooledAmqp) registerConsumerHealth(consumerName, queueName string, autoACK bool) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 

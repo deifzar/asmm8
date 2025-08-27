@@ -149,6 +149,27 @@ func (s *SharedAmqpState) SetConsumers(c map[string][]string) {
 	s.consumers = c
 }
 
+func (s *SharedAmqpState) AddConsumerToQueue(queueName, consumerName string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.consumers[queueName] == nil {
+		s.consumers[queueName] = make([]string, 0)
+	}
+	s.consumers[queueName] = append(s.consumers[queueName], consumerName)
+}
+
+func (s *SharedAmqpState) GetConsumersForQueue(queueName string) []string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if consumers, exists := s.consumers[queueName]; exists {
+		// Return a copy to prevent external modification
+		result := make([]string, len(consumers))
+		copy(result, consumers)
+		return result
+	}
+	return nil
+}
+
 func (s *SharedAmqpState) DeleteQueueByName(qname string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

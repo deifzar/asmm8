@@ -28,9 +28,10 @@ ORCHESTRATORM8:
       - "qasmm8"  # queue name
       - "casmm8"  # consumer name
       - "false"   # autoack
-  naabum8: # API service name
-    Queue:
-      - cptm8 # exchange_name
+    Publisher: # This the default published message
+      - "cptm8" # exchange
+      - "cptm8.naabum8.get.scan" # Routing key
+      - "asmm8" # caller service
 ASMM8:
   runType: fast   # Set to either fast (passive enum) or complete (active enumeration).
   activeWordList: subdomainslite.txt # Wordlist file in the wordlist folder

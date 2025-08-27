@@ -28,23 +28,11 @@ ORCHESTRATORM8:
       - "qasmm8"  # queue name
       - "casmm8"  # consumer name
       - "false"   # autoack
-  naabum8:
-    Queue:
-      - cptm8 # exchange name
-      # - qnaabum8
-      # - cptm8.naabum8.#
-      # - 1
-    # Queue-arguments:
-    #   "x-max-length": 1
-    #   "x-overflow": "reject-publish"
-    # Consumer:
-    #   - "qnaabum8"
-    #   - "false"
-    #   - "cptm8"
+    Publisher: # This the default published message
+      - "cptm8" # exchange
+      - "cptm8.naabum8.get.scan" # Routing key
+      - "asmm8" # caller service
 ASMM8:
-  # domains:  # List root domains here.
-  #   - example.com
-  #   - mydomain.com
   runType: fast   # Set to either fast (passive enum) or complete (active enumeration).
   activeWordList: subdomainslite.txt
   activeThreads: 100

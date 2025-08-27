@@ -48,7 +48,7 @@ func (m *Controller8ASSM8) LaunchScan(c *gin.Context) {
 	// If relevant queue does not exist, inform the user that there is one ASMM8 running at this moment and advise the user to wait for the latest results.
 	queue_consumer := m.Config.GetStringSlice("ORCHESTRATORM8.asmm8.Queue")
 	qargs_consumer := m.Config.GetStringMap("ORCHESTRATORM8.asmm8.Queue-arguments")
-	exchange := m.Config.GetStringSlice("ORCHESTRATORM8.naabum8.Queue")[0]
+	publishingdetails := m.Config.GetStringSlice("ORCHESTRATORM8.asmm8.Publisher")
 	if m.Orch.ExistQueue(queue_consumer[1], qargs_consumer) {
 		DB := m.Db
 		domain8 := db8.NewDb8Domain8(DB)
@@ -56,14 +56,14 @@ func (m *Controller8ASSM8) LaunchScan(c *gin.Context) {
 		if err != nil {
 			// move on and call naabum8 scan
 			log8.BaseLogger.Error().Msg("HTTP 500 Response - ASM8 Full scans failed - Error fetching all domains from DB to launch scan.")
-			m.Orch.PublishToExchange(exchange, "cptm8.naabum8.get.scan", nil, "asmm8")
+			m.Orch.PublishToExchange(publishingdetails[0], publishingdetails[1], nil, publishingdetails[2])
 			notification8.PoolHelper.PublishSysErrorNotification("LaunchScan - Error fetching all domains from DB to launch scan", "urgent", "asmm8")
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "msg": "ASM8 Scans failed. Error fetching all domains from DB to launch scan."})
 			return
 		}
 		if len(get) < 1 {
 			// no domains enabled - move on and call naabum8 scan
-			m.Orch.PublishToExchange(exchange, "cptm8.naabum8.get.scan", nil, "asmm8")
+			m.Orch.PublishToExchange(publishingdetails[0], publishingdetails[1], nil, publishingdetails[2])
 			log8.BaseLogger.Info().Msg("ASM8 full scans API call success. No targets in scope")
 			c.JSON(http.StatusOK, gin.H{"status": "success", "msg": "ASM8 full scans finished. No target in scope"})
 			return
@@ -73,7 +73,7 @@ func (m *Controller8ASSM8) LaunchScan(c *gin.Context) {
 		if err != nil {
 			// move on and call naabum8 scan
 			log8.BaseLogger.Error().Msg("HTTP 500 Response - ASM8 Full scans failed - Error during tools installation!")
-			m.Orch.PublishToExchange(exchange, "cptm8.naabum8.get.scan", nil, "asmm8")
+			m.Orch.PublishToExchange(publishingdetails[0], publishingdetails[1], nil, publishingdetails[2])
 			notification8.PoolHelper.PublishSysErrorNotification("LaunchScan - Error during tools installation", "urgent", "asmm8")
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "msg": "Launching Full scans is not possible at this moment due to interal errors ocurring during the tools installation. Please, check the notification."})
 			return
@@ -85,7 +85,7 @@ func (m *Controller8ASSM8) LaunchScan(c *gin.Context) {
 	} else {
 		// move on and call naabum8 scan
 		log8.BaseLogger.Info().Msg("Full scans API call cannot launch the scans at this moment - RabbitMQ queues do not exist.")
-		m.Orch.PublishToExchange(exchange, "cptm8.naabum8.get.scan", nil, "asmm8")
+		m.Orch.PublishToExchange(publishingdetails[0], publishingdetails[1], nil, publishingdetails[2])
 		notification8.PoolHelper.PublishSysErrorNotification("LaunchScan - Full scans API call cannot launch the scans at this moment - RabbitMQ queues do not exist.", "urgent", "asmm8")
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "msg": "HTTP 500 Response - ASMM8 scans failed - Launching ASMM8 Full scans are not possible at this moment due to non-existent RabbitMQ queues."})
 		return
@@ -255,8 +255,8 @@ func (m *Controller8ASSM8) Active(fullScan bool, target []model8.Domain8) {
 	}
 	if fullScan {
 		// call naabum8 scan
-		cptm8_exchange := m.Config.GetStringSlice("ORCHESTRATORM8.naabum8.Queue")[0]
-		m.Orch.PublishToExchange(cptm8_exchange, "cptm8.naabum8.get.scan", nil, "asmm8")
+		publishingdetails := m.Config.GetStringSlice("ORCHESTRATORM8.asmm8.Publisher")
+		m.Orch.PublishToExchange(publishingdetails[0], publishingdetails[1], nil, publishingdetails[2])
 		if changes_occurred {
 			// send notification
 			notification8.PoolHelper.PublishSecurityNotificationAdmin("New hostnames have been found", "normal", "asmm8")

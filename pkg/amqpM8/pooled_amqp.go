@@ -37,6 +37,7 @@ type PooledAmqpInterface interface {
 	GetQueueByExchangeNameAndQueueName(exchangeName string, queuename string) amqp.Queue
 	GetBindingsByExchangeNameAndQueueName(exchangeName string, queuename string) []string
 	GetConsumerByName(consumnerName string) []string
+	GetConsumersForQueue(queueName string) []string
 	SetExchange(exchangeName string, exchangeType string)
 	SetQueueByExchangeName(exchangeName string, queueName string, queue amqp.Queue)
 	SetBindingQueueByExchangeName(exchangeName string, queueName string, bindingKeys []string)
@@ -142,6 +143,11 @@ func (w *PooledAmqp) GetBindingsByExchangeNameAndQueueName(exchangeName string, 
 // GetConsumerByName returns consumer info by name
 func (w *PooledAmqp) GetConsumerByName(consumerName string) []string {
 	return w.sharedState.GetConsumerByName(consumerName)
+}
+
+// GetConsumersForQueue returns all consumers for a specific queue
+func (w *PooledAmqp) GetConsumersForQueue(queueName string) []string {
+	return w.sharedState.GetConsumersForQueue(queueName)
 }
 
 // SetExchange sets an exchange
@@ -375,11 +381,18 @@ func (w *PooledAmqp) ConsumeWithContext(ctx context.Context, consumerName, queue
 	log8.BaseLogger.Info().Msgf("Success with consumer creation for queue `%s`", queueName)
 	w.registerConsumerHealth(consumerName, queueName, autoACK)
 
+	// Channel to communicate consumer completion/failure back to caller
+	done := make(chan error, 1)
+
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
 				log8.BaseLogger.Error().Msgf("Consumer panic recovered for queue `%s`: %v", queueName, r)
 				w.updateConsumerHealth(consumerName, false, 0, 1)
+				done <- fmt.Errorf("consumer panic for queue `%s`: %v", queueName, r)
+			} else {
+				// Normal exit - send nil to indicate graceful shutdown
+				done <- nil
 			}
 			w.markConsumerInactive(consumerName)
 		}()
@@ -396,6 +409,10 @@ func (w *PooledAmqp) ConsumeWithContext(ctx context.Context, consumerName, queue
 			case msg, ok := <-msgs:
 				if !ok {
 					log8.BaseLogger.Warn().Msgf("Consumer for queue `%s` stopped - channel closed", queueName)
+					// Publish message to other microservice so it does not stall the flow
+					w.publishMessage("cptm8", "cptm8.naabum8.get.scan", nil, "asmm8")
+					// Send error to indicate connection failure
+					done <- fmt.Errorf("consumer for queue `%s` stopped - connection lost", queueName)
 					return
 				}
 
@@ -420,7 +437,8 @@ func (w *PooledAmqp) ConsumeWithContext(ctx context.Context, consumerName, queue
 		}
 	}()
 
-	return nil
+	// Block and wait for the consumer goroutine to complete or fail
+	return <-done
 }
 
 // ConsumeWithReconnect starts consuming messages with automatic reconnection on connection failure
@@ -438,6 +456,22 @@ func (w *PooledAmqp) ConsumeWithReconnect(ctx context.Context, consumerName, que
 				log8.BaseLogger.Info().Msgf("Consumer `%s` shutting down gracefully due to context cancellation", consumerName)
 				return
 			default:
+				// Clean up any existing consumers for this queue before creating new one
+				// This ensures we maintain only one consumer per queue
+				existingConsumers := w.GetConsumersForQueue(queueName)
+				if len(existingConsumers) > 0 {
+					log8.BaseLogger.Info().Msgf("Found %d existing consumer(s) for queue `%s`: %v", len(existingConsumers), queueName, existingConsumers)
+					for _, existingConsumer := range existingConsumers {
+						log8.BaseLogger.Info().Msgf("Cancelling existing consumer `%s` for queue `%s`", existingConsumer, queueName)
+						if cancelErr := w.CancelConsumer(existingConsumer); cancelErr != nil {
+							log8.BaseLogger.Warn().Msgf("Failed to cancel existing consumer `%s`: %v", existingConsumer, cancelErr)
+							// Continue anyway - we'll try to create the new consumer
+						} else {
+							log8.BaseLogger.Info().Msgf("Successfully cancelled existing consumer `%s`", existingConsumer)
+						}
+					}
+				}
+
 				// Generate unique consumer tag for each attempt to avoid RabbitMQ conflicts
 				uniqueConsumerName := w.generateUniqueConsumerTag(consumerName)
 				log8.BaseLogger.Debug().Msgf("Using unique consumer tag `%s` for queue `%s`", uniqueConsumerName, queueName)
@@ -483,9 +517,9 @@ func (w *PooledAmqp) ConsumeWithReconnect(ctx context.Context, consumerName, que
 					continue
 				}
 
-				// If we reach here, ConsumeWithContext has exited (shouldn't happen normally)
-				log8.BaseLogger.Warn().Msgf("Consumer `%s` for queue `%s` exited unexpectedly, will attempt reconnection", uniqueConsumerName, queueName)
-				time.Sleep(currentDelay)
+				log8.BaseLogger.Info().Msgf("Consumer `%s` successfully started for queue `%s`", uniqueConsumerName, queueName)
+				// Consumer successfully started - exit the retry loop
+				return
 			}
 		}
 	}()
@@ -497,6 +531,12 @@ func (w *PooledAmqp) ConsumeWithReconnect(ctx context.Context, consumerName, que
 func (w *PooledAmqp) generateUniqueConsumerTag(baseConsumerName string) string {
 	timestamp := time.Now().UnixNano()
 	random := rand.Int63()
+
+	// If no base name is provided, use a default prefix
+	if baseConsumerName == "" {
+		baseConsumerName = "consumer"
+	}
+
 	return fmt.Sprintf("%s-%d-%d", baseConsumerName, timestamp, random)
 }
 
@@ -609,6 +649,10 @@ func (w *PooledAmqp) registerConsumerHealth(consumerName, queueName string, auto
 		LastSeen:     now,
 		CreatedAt:    now,
 	}
+
+	// Track consumer in shared state for proper cleanup
+	w.sharedState.AddConsumerToQueue(queueName, consumerName)
+	log8.BaseLogger.Debug().Msgf("Consumer `%s` registered for queue `%s` in shared state", consumerName, queueName)
 }
 
 func (w *PooledAmqp) updateConsumerHealth(consumerName string, isActive bool, messageIncrement, errorIncrement uint64) {
@@ -642,6 +686,10 @@ func (w *PooledAmqp) markConsumerInactive(consumerName string) {
 	if health, exists := w.consumerHealth[consumerName]; exists {
 		health.IsActive = false
 	}
+
+	// Clean up consumer from shared state when it becomes inactive
+	w.sharedState.DeleteConsumerByName(consumerName)
+	log8.BaseLogger.Debug().Msgf("Consumer `%s` marked inactive and removed from shared state", consumerName)
 }
 
 func (w *PooledAmqp) GetConsumerHealth() map[string]*ConsumerHealth {
@@ -714,4 +762,59 @@ func (w *PooledAmqp) IsConsumerActive(consumerName string) bool {
 		return health.IsActive
 	}
 	return false
+}
+
+// publishMessage publishes message directly or from a pooled connection
+func (w *PooledAmqp) publishMessage(exchange, routingKey string, payload interface{}, source string) {
+	// Try to use the current connection if healthy
+	if w.IsConnected() {
+		err := w.publishDirect(exchange, routingKey, payload, source)
+		if err == nil {
+			log8.BaseLogger.Info().Msgf("Failover message published successfully to %s with routing key %s", exchange, routingKey)
+			return
+		}
+		log8.BaseLogger.Warn().Msgf("Failed to publish failover message using current connection: %v", err)
+	}
+
+	// If current connection failed, try to get a different connection from the pool
+	err := WithPooledConnection(func(conn PooledAmqpInterface) error {
+		return conn.Publish(exchange, routingKey, payload, source)
+	})
+
+	if err != nil {
+		log8.BaseLogger.Error().Msgf("Failed to publish failover message to %s: %v", exchange, err)
+	} else {
+		log8.BaseLogger.Info().Msgf("Failover message published successfully using pool connection to %s with routing key %s", exchange, routingKey)
+	}
+}
+
+// publishDirect publishes directly using the current connection
+func (w *PooledAmqp) publishDirect(exchange, routingKey string, payload interface{}, source string) error {
+	var body []byte
+	var err error
+
+	if payload != nil {
+		body, err = json.Marshal(payload)
+		if err != nil {
+			return fmt.Errorf("failed to marshal payload: %w", err)
+		}
+	}
+
+	// Create message
+	msg := amqp.Publishing{
+		ContentType:  "application/json",
+		Body:         body,
+		DeliveryMode: amqp.Persistent,
+		Timestamp:    time.Now(),
+		AppId:        source,
+	}
+
+	// Publish the message
+	return w.pooledConn.channel.Publish(
+		exchange,   // exchange
+		routingKey, // routing key
+		false,      // mandatory
+		false,      // immediate
+		msg,        // message
+	)
 }

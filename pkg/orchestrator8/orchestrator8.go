@@ -94,7 +94,7 @@ func (o *Orchestrator8) ExistConsumersForQueue(queueName string) bool {
 
 	if err != nil {
 		log8.BaseLogger.Debug().Msg(err.Error())
-		log8.BaseLogger.Error().Msgf("Error checking if consumers exists for queue `%s`", queueName)
+		log8.BaseLogger.Error().Msgf("Error checking if consumers exist for queue `%s`", queueName)
 		return false
 	}
 

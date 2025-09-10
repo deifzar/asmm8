@@ -21,14 +21,14 @@ func InitializeConnectionPool() error {
 
 	// Create custom config for this application's needs
 	config := ConnectionPoolConfig{
-		MaxConnections:     v.GetInt("RabbitMQ.pool.max_connections"),
-		MinConnections:     v.GetInt("RabbitMQ.pool.min_connections"),
-		MaxIdleTime:        v.GetDuration("RabbitMQ.pool.max_idle_time"),
-		MaxLifetime:        v.GetDuration("RabbitMQ.pool.max_lifetime"),
-		HealthCheckPeriod:  v.GetDuration("RabbitMQ.pool.health_check_period"),
-		ConnectionTimeout:  v.GetDuration("RabbitMQ.pool.connection_timeout"),
-		RetryAttempts:      v.GetInt("RabbitMQ.pool.retry_attempts"),
-		RetryDelay:         v.GetDuration("RabbitMQ.pool.retry_delay"),
+		MaxConnections:    v.GetInt("RabbitMQ.pool.max_connections"),
+		MinConnections:    v.GetInt("RabbitMQ.pool.min_connections"),
+		MaxIdleTime:       v.GetDuration("RabbitMQ.pool.max_idle_time"),
+		MaxLifetime:       v.GetDuration("RabbitMQ.pool.max_lifetime"),
+		HealthCheckPeriod: v.GetDuration("RabbitMQ.pool.health_check_period"),
+		ConnectionTimeout: v.GetDuration("RabbitMQ.pool.connection_timeout"),
+		RetryAttempts:     v.GetInt("RabbitMQ.pool.retry_attempts"),
+		RetryDelay:        v.GetDuration("RabbitMQ.pool.retry_delay"),
 	}
 
 	// Use defaults if not configured
@@ -39,13 +39,13 @@ func InitializeConnectionPool() error {
 		config.MinConnections = 2
 	}
 	if config.MaxIdleTime == 0 {
-		config.MaxIdleTime = 15 * time.Minute
+		config.MaxIdleTime = 1 * time.Hour
 	}
 	if config.MaxLifetime == 0 {
-		config.MaxLifetime = 1 * time.Hour
+		config.MaxLifetime = 2 * time.Hour
 	}
 	if config.HealthCheckPeriod == 0 {
-		config.HealthCheckPeriod = 5 * time.Minute
+		config.HealthCheckPeriod = 30 * time.Minute
 	}
 	if config.ConnectionTimeout == 0 {
 		config.ConnectionTimeout = 30 * time.Second
@@ -80,7 +80,7 @@ func CleanupConnectionPool() {
 func GetPoolHealthStatus() map[string]interface{} {
 	manager := GetGlobalPoolManager()
 	stats := manager.GetAllPoolStats()
-	
+
 	healthStatus := make(map[string]interface{})
 	for poolName, stat := range stats {
 		healthStatus[poolName] = map[string]interface{}{
@@ -93,6 +93,6 @@ func GetPoolHealthStatus() map[string]interface{} {
 			"total_returned":      stat.TotalReturned,
 		}
 	}
-	
+
 	return healthStatus
 }

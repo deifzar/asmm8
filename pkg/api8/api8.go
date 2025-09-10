@@ -116,10 +116,9 @@ func (a *Api8) Routes() {
 	r.GET("/scan/active", contrASSM8.LaunchActive)
 	r.GET("/scan/check", contrASSM8.LauchCheckLive)
 
-	// Health monitoring
-	contrHealth := controller8.NewController8Health(a.Config)
-	r.GET("/health/rabbitmq", contrHealth.GetRabbitMQHealth)
-	r.GET("/health/consumer/:consumer", contrHealth.GetConsumerHealth)
+	// Health live probes
+	r.GET("/health", contrASSM8.HealthCheck)
+	r.GET("/ready", contrASSM8.ReadinessCheck)
 
 	a.Router = r
 }

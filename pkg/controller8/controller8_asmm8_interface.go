@@ -7,6 +7,8 @@ type Controller8ASMM8Interface interface {
 	LaunchPassive(*gin.Context)
 	LaunchActive(*gin.Context)
 	LauchCheckLive(*gin.Context)
+	HealthCheck(c *gin.Context)
+	ReadinessCheck(c *gin.Context)
 	// RabbitMQBringConsumerBackAndPublishMessage() error
 	// RabbitMQBringConsumerBack() error
 	// RabbitMQPublishMessage() error

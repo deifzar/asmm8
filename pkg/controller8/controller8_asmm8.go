@@ -37,6 +37,61 @@ func NewController8ASSM8(db *sql.DB, config *viper.Viper) Controller8ASMM8Interf
 	return &Controller8ASSM8{Db: db, Config: config, Orch: orch}
 }
 
+func (m *Controller8ASSM8) HealthCheck(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"status":    "healthy",
+		"timestamp": time.Now().Format(time.RFC3339),
+		"service":   "asmm8",
+	})
+}
+
+func (m *Controller8ASSM8) ReadinessCheck(c *gin.Context) {
+	dbHealthy := true
+	rbHealthy := true
+	if err := m.Db.Ping(); err != nil {
+		log8.BaseLogger.Error().Err(err).Msg("Database ping failed during readiness check")
+		dbHealthy = false
+	}
+	dbStatus := "unhealthy"
+	if dbHealthy {
+		dbStatus = "healthy"
+	}
+
+	queue_consumer := m.Config.GetStringSlice("ORCHESTRATORM8.asmm8.Queue")
+	qargs_consumer := m.Config.GetStringMap("ORCHESTRATORM8.asmm8.Queue-arguments")
+
+	if !m.Orch.ExistQueue(queue_consumer[1], qargs_consumer) || !m.Orch.ExistConsumersForQueue(queue_consumer[1]) {
+		rbHealthy = false
+	}
+
+	rbStatus := "unhealthy"
+	if rbHealthy {
+		rbStatus = "healthy"
+	}
+
+	if dbHealthy && rbHealthy {
+		c.JSON(http.StatusOK, gin.H{
+			"status":    "ready",
+			"timestamp": time.Now().Format(time.RFC3339),
+			"service":   "asmm8",
+			"checks": gin.H{
+				"database": dbStatus,
+				"rabbitmq": rbStatus,
+			},
+		})
+	} else {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"status":    "not ready",
+			"timestamp": time.Now().Format(time.RFC3339),
+			"service":   "asmm8",
+			"checks": gin.H{
+				"database": dbStatus,
+				"rabbitmq": rbStatus,
+			},
+		})
+	}
+}
+
 func (m *Controller8ASSM8) LaunchScan(c *gin.Context) {
 	// Clean up old files in tmp directory (older than 24 hours)
 	cleanup := cleanup8.NewCleanup8()

@@ -18,9 +18,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
     -a -installsuffix cgo \
     -o asmm8 .
 
-RUN go install github.com/projectdiscovery/alterx/cmd/alterx@v0.0.4 && \
+RUN go install github.com/projectdiscovery/alterx/cmd/alterx@v0.0.6 && \
     go install github.com/projectdiscovery/dnsx/cmd/dnsx@v1.2.2 && \
-    go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@v2.7.0
+    go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@v2.9.0
 
 # Release
 FROM alpine:3.20

@@ -1,5 +1,5 @@
 # Build
-FROM golang:1.23-alpine3.20 AS builder
+FROM golang:1.25-alpine3.22 AS builder
 # Install only required build dependencies
 RUN apk update && apk add --no-cache git ca-certificates tzdata \
     && adduser -D -g '' appuser
@@ -23,7 +23,7 @@ RUN go install github.com/projectdiscovery/alterx/cmd/alterx@v0.0.6 && \
     go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@v2.9.0
 
 # Release
-FROM alpine:3.20
+FROM alpine:3.22
 
 # Security updates and minimal runtime dependencies
 RUN apk --no-cache add ca-certificates tzdata \

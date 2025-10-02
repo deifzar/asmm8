@@ -195,9 +195,9 @@ func Difference(slice1, slice2 []string) []string {
 
 func InstallTools() error {
 	for name, path := range map[string]string{
-		"alterx":    "github.com/projectdiscovery/alterx/cmd/alterx@v0.0.4",
+		"alterx":    "github.com/projectdiscovery/alterx/cmd/alterx@v0.0.6",
 		"dnsx":      "github.com/projectdiscovery/dnsx/cmd/dnsx@v1.2.2",
-		"subfinder": "github.com/projectdiscovery/subfinder/v2/cmd/subfinder@v2.7.0",
+		"subfinder": "github.com/projectdiscovery/subfinder/v2/cmd/subfinder@v2.9.0",
 		// "amass":  "github.com/owasp-amass/amass/v4/...@master",
 		// "oam_subs":  "github.com/owasp-amass/oam-tools/cmd/oam_subs@master",
 	} {

@@ -12,6 +12,7 @@ COPY --chown=appuser:appuser alterx /usr/local/bin/
 COPY --chown=appuser:appuser dnsx /usr/local/bin/
 COPY --chown=appuser:appuser subfinder /usr/local/bin/
 COPY --chown=appuser:appuser docker-entrypoint.sh /usr/local/bin/
+COPY --chown=appuser:appuser wordlist ./wordlist
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Set ownership of the app directory

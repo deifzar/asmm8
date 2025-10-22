@@ -211,7 +211,7 @@ func (w *PooledAmqp) DeclareQueue(exchangeName string, queueName string, prefetc
 
 	q, err := w.pooledConn.channel.QueueDeclare(
 		queueName, // name
-		false,     // durable
+		true,      // durable
 		false,     // delete when unused
 		false,     // exclusive
 		false,     // no-wait

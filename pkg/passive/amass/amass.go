@@ -22,7 +22,7 @@ func RunAmassIn(seedDomain string, results chan<- string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	log8.BaseLogger.Info().Msgf("Running `Amass` on %s\n", seedDomain)
 	var out, outerr bytes.Buffer
-	cmd := exec.Command("amass", "enum", "-passive", "-config", "./amassconfig.yaml", "-log", "./amasserror.log", "-nocolor", "-d", seedDomain)
+	cmd := exec.Command("amass", "enum", "-passive", "-config", "./configs/amassconfig.yaml", "-log", "./amasserror.log", "-nocolor", "-d", seedDomain)
 	cmd.Stdout = &out
 	cmd.Stderr = &outerr
 
@@ -37,7 +37,7 @@ func RunAmassIn(seedDomain string, results chan<- string, wg *sync.WaitGroup) {
 	}
 	log8.BaseLogger.Info().Msgf("Running `oam_subs` on %s\n", seedDomain)
 	var out2, outerr2 bytes.Buffer
-	cmd = exec.Command("oam_subs", "-names", "-config", "./amassconfig.yaml", "-d", seedDomain)
+	cmd = exec.Command("oam_subs", "-names", "-config", "./configs/amassconfig.yaml", "-d", seedDomain)
 	cmd.Stdout = &out2
 	cmd.Stderr = &outerr2
 

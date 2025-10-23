@@ -2,10 +2,7 @@
 /asmm8
 
 # configuration files
-/configuration.yaml
-/subfinderconfig.yaml
-/subfinderprovider-config.yaml
-/subfinderprovider-config-example.yaml
+configs/*
 
 # other session files
 resume.cfg

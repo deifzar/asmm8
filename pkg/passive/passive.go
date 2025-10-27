@@ -33,7 +33,7 @@ func (r *PassiveRunner) RunPassiveEnum(prevResults map[string][]string) map[stri
 	}
 
 	wg.Wait()
-	log8.BaseLogger.Error().Msg("Cleaning results from passive scan.")
+	log8.BaseLogger.Info().Msg("Cleaning results from passive scan.")
 	for _, domain := range r.SeedDomains {
 		results.Hostnames[domain] = append(results.Hostnames[domain], prevResults[domain]...)
 		clean := utils.RemoveDuplicates(results.Hostnames[domain])

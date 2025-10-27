@@ -27,9 +27,6 @@ func GetLogger(logFilePath string) zerolog.Logger {
 		zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 		zerolog.TimeFieldFormat = time.RFC3339Nano
 
-		// Ensure log directory exists with proper permissions (0750)
-		os.MkdirAll("log", 0750)
-
 		fileLogger := &lumberjack.Logger{
 			Filename:   logFilePath,
 			MaxSize:    100, //

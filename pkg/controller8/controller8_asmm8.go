@@ -92,6 +92,16 @@ func (m *Controller8ASSM8) ReadinessCheck(c *gin.Context) {
 	}
 }
 
+// handleNotificationErrorOnFullscan handles errors when fullscan is true by publishing to RabbitMQ and sending error notifications
+func (m *Controller8ASSM8) handleNotificationErrorOnFullscan(fullscan bool, message string, urgency string) {
+	if fullscan {
+		publishingdetails := m.Config.GetStringSlice("ORCHESTRATORM8.asmm8.Publisher")
+		m.Orch.PublishToExchange(publishingdetails[0], publishingdetails[1], nil, publishingdetails[2])
+		notification8.PoolHelper.PublishSysErrorNotification(message, urgency, "asmm8")
+		log8.BaseLogger.Info().Msg("Published message to RabbitMQ for next service (naabu8)")
+	}
+}
+
 func (m *Controller8ASSM8) LaunchScan(c *gin.Context) {
 	// Clean up old files in tmp directory (older than 24 hours)
 	cleanup := cleanup8.NewCleanup8()
@@ -111,8 +121,7 @@ func (m *Controller8ASSM8) LaunchScan(c *gin.Context) {
 		if err != nil {
 			// move on and call naabum8 scan
 			log8.BaseLogger.Error().Msg("HTTP 500 Response - ASM8 Full scans failed - Error fetching all domains from DB to launch scan.")
-			m.Orch.PublishToExchange(publishingdetails[0], publishingdetails[1], nil, publishingdetails[2])
-			notification8.PoolHelper.PublishSysErrorNotification("LaunchScan - Error fetching all domains from DB to launch scan", "urgent", "asmm8")
+			m.handleNotificationErrorOnFullscan(true, "LaunchScan - Error fetching all domains from DB to launch scan", "normal")
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "msg": "ASM8 Scans failed. Error fetching all domains from DB to launch scan."})
 			return
 		}
@@ -128,8 +137,7 @@ func (m *Controller8ASSM8) LaunchScan(c *gin.Context) {
 		if err != nil {
 			// move on and call naabum8 scan
 			log8.BaseLogger.Error().Msg("HTTP 500 Response - ASM8 Full scans failed - Error during tools installation!")
-			m.Orch.PublishToExchange(publishingdetails[0], publishingdetails[1], nil, publishingdetails[2])
-			notification8.PoolHelper.PublishSysErrorNotification("LaunchScan - Error during tools installation", "urgent", "asmm8")
+			m.handleNotificationErrorOnFullscan(true, "LaunchScan - Error during tools installation", "normal")
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "msg": "Launching Full scans is not possible at this moment due to interal errors ocurring during the tools installation. Please, check the notification."})
 			return
 		}
@@ -140,8 +148,7 @@ func (m *Controller8ASSM8) LaunchScan(c *gin.Context) {
 	} else {
 		// move on and call naabum8 scan
 		log8.BaseLogger.Info().Msg("Full scans API call cannot launch the scans at this moment - RabbitMQ queues do not exist.")
-		m.Orch.PublishToExchange(publishingdetails[0], publishingdetails[1], nil, publishingdetails[2])
-		notification8.PoolHelper.PublishSysErrorNotification("LaunchScan - Full scans API call cannot launch the scans at this moment - RabbitMQ queues do not exist.", "urgent", "asmm8")
+		m.handleNotificationErrorOnFullscan(true, "LaunchScan - Full scans API call cannot launch the scans at this moment - RabbitMQ queues do not exist.", "normal")
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "msg": "HTTP 500 Response - ASMM8 scans failed - Launching ASMM8 Full scans are not possible at this moment due to non-existent RabbitMQ queues."})
 		return
 	}
@@ -317,6 +324,7 @@ func (m *Controller8ASSM8) Active(fullScan bool, target []model8.Domain8) {
 			notification8.PoolHelper.PublishSecurityNotificationAdmin("New hostnames have been found", "normal", "asmm8")
 			notification8.PoolHelper.PublishSecurityNotificationUser("New hostnames have been found", "normal", "asmm8")
 		}
+		log8.BaseLogger.Info().Msg("Published message to RabbitMQ for next service (naabum8)")
 
 	}
 	// Scans have finished.

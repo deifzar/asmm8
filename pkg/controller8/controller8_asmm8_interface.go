@@ -9,6 +9,7 @@ type Controller8ASMM8Interface interface {
 	LauchCheckLive(*gin.Context)
 	HealthCheck(c *gin.Context)
 	ReadinessCheck(c *gin.Context)
+	handleNotificationErrorOnFullscan(fullscan bool, message string, urgency string)
 	// RabbitMQBringConsumerBackAndPublishMessage() error
 	// RabbitMQBringConsumerBack() error
 	// RabbitMQPublishMessage() error

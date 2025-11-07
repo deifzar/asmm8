@@ -136,6 +136,7 @@ func (m *Controller8ASSM8) LaunchScan(c *gin.Context) {
 		err = utils.InstallTools()
 		if err != nil {
 			// move on and call naabum8 scan
+			m.Orch.PublishToExchange(publishingdetails[0], publishingdetails[1], nil, publishingdetails[2])
 			log8.BaseLogger.Error().Msg("HTTP 500 Response - ASM8 Full scans failed - Error during tools installation!")
 			m.handleNotificationErrorOnFullscan(true, "LaunchScan - Error during tools installation", "normal")
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "msg": "Launching Full scans is not possible at this moment due to interal errors ocurring during the tools installation. Please, check the notification."})
@@ -261,19 +262,46 @@ func (m *Controller8ASSM8) LauchCheckLive(c *gin.Context) {
 }
 
 func (m *Controller8ASSM8) Active(fullScan bool, target []model8.Domain8) {
+	var err error
+	var scanCompleted bool = false
+	var scanFailed bool = false
+	var changes_occurred bool = false
+	// Ensure we always publish to exchange at the end if it's a full scan
+	if fullScan {
+		defer func() {
+			// Always publish, but with different payload based on status
+			var payload any = nil
+			// call naabum8 scan
+			if scanFailed {
+				payload = map[string]interface{}{
+					"status":  "warning",
+					"message": "ASMM8 scan is showing warnings. Please, check!",
+				}
+			} else if !scanCompleted {
+				payload = map[string]interface{}{
+					"status":  "incomplete",
+					"message": "ASMM8 scan did not complete. Unexpected errors.",
+				}
+			}
+			publishingdetails := m.Config.GetStringSlice("ORCHESTRATORM8.asmm8.Publisher")
+			m.Orch.PublishToExchange(publishingdetails[0], publishingdetails[1], payload, publishingdetails[2])
+
+			log8.BaseLogger.Info().Msg("Published message to RabbitMQ for next service (naabum8)")
+		}()
+	}
+
 	var PassiveRunner passive.PassiveRunner
 	PassiveRunner.Subdomains = make(map[string][]string)
 	var ActiveRunner active.ActiveRunner
 	ActiveRunner.Subdomains = make(map[string][]string)
 	prevResults := make(map[string][]string)
-	var err error
-	var changes_occurred bool = false
 
 	for _, d8 := range target {
 		PassiveRunner.SeedDomains = append(PassiveRunner.SeedDomains, d8.Name)
 		ActiveRunner.SeedDomains = append(ActiveRunner.SeedDomains, d8.Name)
 		prevResults[d8.Name], err = m.GetPrevSubdomains(d8.Id, d8.Name)
 		if err != nil {
+			scanFailed = true
 			log8.BaseLogger.Debug().Msg(err.Error())
 			log8.BaseLogger.Warn().Msgf("Active scans: error getting old subdomains for `%s`", d8.Name)
 		}
@@ -299,8 +327,7 @@ func (m *Controller8ASSM8) Active(fullScan bool, target []model8.Domain8) {
 	if err != nil {
 		log8.BaseLogger.Debug().Msg(err.Error())
 		log8.BaseLogger.Warn().Msgf("Active scans: error fetching scan settings for newly found hostnames. Set value to `false` by default")
-	}
-	if settings.Settings.Scannewlyfoundhostname {
+	} else if settings.Settings.Scannewlyfoundhostname {
 		scandefaultenabled = settings.Settings.Scannewlyfoundhostname
 	}
 	log8.BaseLogger.Info().Msg("Active scans: Updating results in database.")
@@ -308,6 +335,7 @@ func (m *Controller8ASSM8) Active(fullScan bool, target []model8.Domain8) {
 	for _, d8 := range target {
 		notify, err := hostname8.InsertBatch(d8.Id, scandefaultenabled, ActiveRunner.Subdomains[d8.Name])
 		if err != nil {
+			scanFailed = true
 			log8.BaseLogger.Debug().Msg(err.Error())
 			log8.BaseLogger.Warn().Msgf("Active scans: error inserting batch for `%s`", d8.Name)
 		}
@@ -315,19 +343,13 @@ func (m *Controller8ASSM8) Active(fullScan bool, target []model8.Domain8) {
 			changes_occurred = true
 		}
 	}
-	if fullScan {
-		// call naabum8 scan
-		publishingdetails := m.Config.GetStringSlice("ORCHESTRATORM8.asmm8.Publisher")
-		m.Orch.PublishToExchange(publishingdetails[0], publishingdetails[1], nil, publishingdetails[2])
-		if changes_occurred {
-			// send notification
-			notification8.PoolHelper.PublishSecurityNotificationAdmin("New hostnames have been found", "normal", "asmm8")
-			notification8.PoolHelper.PublishSecurityNotificationUser("New hostnames have been found", "normal", "asmm8")
-		}
-		log8.BaseLogger.Info().Msg("Published message to RabbitMQ for next service (naabum8)")
-
-	}
 	// Scans have finished.
+	scanCompleted = true
+	if changes_occurred {
+		// send notification
+		notification8.PoolHelper.PublishSecurityNotificationAdmin("New hostnames have been found", "normal", "asmm8")
+		notification8.PoolHelper.PublishSecurityNotificationUser("New hostnames have been found", "normal", "asmm8")
+	}
 	log8.BaseLogger.Info().Msg("Active scans: Active scan has concluded.")
 }
 

@@ -136,7 +136,6 @@ func (m *Controller8ASSM8) LaunchScan(c *gin.Context) {
 		err = utils.InstallTools()
 		if err != nil {
 			// move on and call naabum8 scan
-			m.Orch.PublishToExchange(publishingdetails[0], publishingdetails[1], nil, publishingdetails[2])
 			log8.BaseLogger.Error().Msg("HTTP 500 Response - ASM8 Full scans failed - Error during tools installation!")
 			m.handleNotificationErrorOnFullscan(true, "LaunchScan - Error during tools installation", "normal")
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "msg": "Launching Full scans is not possible at this moment due to interal errors ocurring during the tools installation. Please, check the notification."})

@@ -282,6 +282,11 @@ func (m *Controller8ASSM8) Active(fullScan bool, target []model8.Domain8) {
 					"status":  "incomplete",
 					"message": "ASMM8 scan did not complete. Unexpected errors.",
 				}
+			} else {
+				payload = map[string]interface{}{
+					"status":  "complete",
+					"message": "ASMM8 scan run successfully!",
+				}
 			}
 			publishingdetails := m.Config.GetStringSlice("ORCHESTRATORM8.asmm8.Publisher")
 			m.Orch.PublishToExchange(publishingdetails[0], publishingdetails[1], payload, publishingdetails[2])

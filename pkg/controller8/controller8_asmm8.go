@@ -298,7 +298,7 @@ func (m *Controller8ASSM8) Active(fullScan bool, target []model8.Domain8) {
 			if err != nil {
 				log8.BaseLogger.Error().Msgf("Failed to publish to exchange: %v", err)
 				// Retry once after brief delay
-				time.Sleep(1 * time.Second)
+				time.Sleep(5 * time.Second)
 				retryErr := m.Orch.PublishToExchange(publishingdetails[0], publishingdetails[1], payload, publishingdetails[2])
 				if retryErr != nil {
 					log8.BaseLogger.Error().Msgf("Retry failed: %v", retryErr)

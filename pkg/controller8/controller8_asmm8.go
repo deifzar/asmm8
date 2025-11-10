@@ -270,7 +270,7 @@ func (m *Controller8ASSM8) Active(fullScan bool, target []model8.Domain8) {
 		defer func() {
 			// Recover from panic if any
 			if r := recover(); r != nil {
-				log8.BaseLogger.Error().Msgf("PANIC recovered in A scans: %v", r)
+				log8.BaseLogger.Error().Msgf("PANIC recovered in ASMM8 scans: %v", r)
 				scanCompleted = false
 				scanFailed = true
 			}

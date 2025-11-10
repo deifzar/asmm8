@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"deifzar/asmm8/pkg/log8"
 	"deifzar/asmm8/pkg/model8"
+	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
@@ -11,7 +12,7 @@ import (
 	"sync"
 )
 
-func RunAlterxIn(seedDomain string, threads int, input string, output string, results chan<- string, wg *sync.WaitGroup) {
+func RunAlterxIn(seedDomain string, threads int, input string, output string, results chan<- string, wg *sync.WaitGroup, scanError *error, mu *sync.Mutex) {
 	defer wg.Done()
 	log8.BaseLogger.Info().Msgf("Running DNS Permutations for %s\n", seedDomain)
 	var out, outerr bytes.Buffer
@@ -25,6 +26,14 @@ func RunAlterxIn(seedDomain string, threads int, input string, output string, re
 		log8.BaseLogger.Debug().Msgf("`alterx` reported the following err %s", outerr.String())
 		log8.BaseLogger.Debug().Msgf(err.Error())
 		log8.BaseLogger.Error().Msg("An error has ocurred with `alterx`")
+
+		// Set the error in a thread-safe way
+		mu.Lock()
+		if *scanError == nil {
+			*scanError = fmt.Errorf("alterx failed for %s: %w", seedDomain, err)
+		}
+		mu.Unlock()
+
 		close(results)
 		return
 	}
@@ -42,6 +51,14 @@ func RunAlterxIn(seedDomain string, threads int, input string, output string, re
 		log8.BaseLogger.Debug().Msg(err.Error())
 		log8.BaseLogger.Debug().Msgf("After alterations, `dnsx` reported the following err %s", outerr.String())
 		log8.BaseLogger.Error().Msg("An error has ocurred with `dnsx` after alterations")
+
+		// Set the error in a thread-safe way
+		mu.Lock()
+		if *scanError == nil {
+			*scanError = fmt.Errorf("alterx (after alterx) failed for %s: %w", seedDomain, err)
+		}
+		mu.Unlock()
+
 		close(results)
 		return
 	}
@@ -56,11 +73,25 @@ func RunAlterxIn(seedDomain string, threads int, input string, output string, re
 	if err != nil {
 		log8.BaseLogger.Debug().Msg(err.Error())
 		log8.BaseLogger.Error().Msgf("Error when deleting the file `%s`", input)
+		// Set the error in a thread-safe way
+		mu.Lock()
+		if *scanError == nil {
+			*scanError = fmt.Errorf("alterx - error when deleting the INPUT file `%s`", input)
+		}
+		mu.Unlock()
 	}
 	err = os.Remove(output)
 	if err != nil {
 		log8.BaseLogger.Debug().Msg(err.Error())
 		log8.BaseLogger.Error().Msgf("Error when deleting the file `%s`", output)
+
+		// Set the error in a thread-safe way
+		mu.Lock()
+		if *scanError == nil {
+			*scanError = fmt.Errorf("alterx - error when deleting the output file `%s`", output)
+		}
+		mu.Unlock()
+
 	}
 	log8.BaseLogger.Info().Msgf("DNS Permutations scan has concluded for %s.\n", seedDomain)
 }

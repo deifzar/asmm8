@@ -268,6 +268,12 @@ func (m *Controller8ASSM8) Active(fullScan bool, target []model8.Domain8) {
 	// Ensure we always publish to exchange at the end if it's a full scan
 	if fullScan {
 		defer func() {
+			// Recover from panic if any
+			if r := recover(); r != nil {
+				log8.BaseLogger.Error().Msgf("PANIC recovered in A scans: %v", r)
+				scanCompleted = false
+				scanFailed = true
+			}
 			// Always publish, but with different payload based on status
 			var payload any = nil
 			// call naabum8 scan
@@ -288,9 +294,26 @@ func (m *Controller8ASSM8) Active(fullScan bool, target []model8.Domain8) {
 				}
 			}
 			publishingdetails := m.Config.GetStringSlice("ORCHESTRATORM8.asmm8.Publisher")
-			m.Orch.PublishToExchange(publishingdetails[0], publishingdetails[1], payload, publishingdetails[2])
-
-			log8.BaseLogger.Info().Msg("Published message to RabbitMQ for next service (naabum8)")
+			err := m.Orch.PublishToExchange(publishingdetails[0], publishingdetails[1], payload, publishingdetails[2])
+			if err != nil {
+				log8.BaseLogger.Error().Msgf("Failed to publish to exchange: %v", err)
+				// Retry once after brief delay
+				time.Sleep(1 * time.Second)
+				retryErr := m.Orch.PublishToExchange(publishingdetails[0], publishingdetails[1], payload, publishingdetails[2])
+				if retryErr != nil {
+					log8.BaseLogger.Error().Msgf("Retry failed: %v", retryErr)
+					// Last resort: urgent notification
+					notification8.PoolHelper.PublishSysErrorNotification(
+						"CRITICAL: Failed to notify naabum8 after ASMM8 scan",
+						"urgent",
+						"asmm8",
+					)
+				} else {
+					log8.BaseLogger.Info().Msg("Published message to RabbitMQ for next service (naabum8) - retry succeeded")
+				}
+			} else {
+				log8.BaseLogger.Info().Msg("Published message to RabbitMQ for next service (naabum8)")
+			}
 		}()
 	}
 
@@ -313,7 +336,11 @@ func (m *Controller8ASSM8) Active(fullScan bool, target []model8.Domain8) {
 
 	log8.BaseLogger.Info().Msg("Active scans: Running Passive scans")
 	// run passive enumeration and get the results
-	passiveResults := PassiveRunner.RunPassiveEnum(prevResults)
+	passiveResults, err := PassiveRunner.RunPassiveEnum(prevResults)
+	if err != nil {
+		scanFailed = true
+		log8.BaseLogger.Error().Msgf("Passive scan failed: %v", err)
+	}
 	log8.BaseLogger.Info().Msg("Active scans: Passive scans have concluded")
 	PassiveRunner.Subdomains = passiveResults
 
@@ -321,7 +348,11 @@ func (m *Controller8ASSM8) Active(fullScan bool, target []model8.Domain8) {
 	threads := m.Config.GetInt("ASMM8.activeThreads")
 
 	log8.BaseLogger.Info().Msg("Active scans: Running Active scans.")
-	activeResults := ActiveRunner.RunActiveEnum(wordlist, threads, passiveResults)
+	activeResults, err := ActiveRunner.RunActiveEnum(wordlist, threads, passiveResults)
+	if err != nil {
+		scanFailed = true
+		log8.BaseLogger.Error().Msgf("Active scan failed: %v", err)
+	}
 	log8.BaseLogger.Info().Msg("Active scans: Active scans have concluded")
 	ActiveRunner.Subdomains = activeResults
 	log8.BaseLogger.Info().Msg("Active scans: Fetching scan settings for newly found hostnames from database.")
@@ -373,15 +404,18 @@ func (m *Controller8ASSM8) Passive(target []model8.Domain8) {
 	}
 	log8.BaseLogger.Info().Msg("Passive scans: Running Passive scans.")
 	// run passive enumeration and get the results
-	passiveResults := PassiveRunner.RunPassiveEnum(prevResults)
+	passiveResults, err := PassiveRunner.RunPassiveEnum(prevResults)
+	if err != nil {
+		log8.BaseLogger.Error().Msgf("Passive scan failed: %v", err)
+	}
 	PassiveRunner.Subdomains = passiveResults
-	log8.BaseLogger.Info().Msg("Active scans: Fetching scan settings for newly found hostnames from database.")
+	log8.BaseLogger.Info().Msg("Passive scans: Fetching scan settings for newly found hostnames from database.")
 	generalscansettings8 := db8.NewDb8Generalsettingsscan8(m.Db)
 	settings, err := generalscansettings8.Get()
 	var scandefaultenabled bool = true
 	if err != nil {
 		log8.BaseLogger.Debug().Msg(err.Error())
-		log8.BaseLogger.Warn().Msgf("Active scans: error fetching scan settings for newly found hostnames. Set value to `false` by default")
+		log8.BaseLogger.Warn().Msgf("Passive scans: error fetching scan settings for newly found hostnames. Set value to `false` by default")
 	}
 	if settings.Settings.Scannewlyfoundhostname {
 		scandefaultenabled = settings.Settings.Scannewlyfoundhostname

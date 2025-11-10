@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"deifzar/asmm8/pkg/log8"
 	"deifzar/asmm8/pkg/model8"
+	"fmt"
 	"os/exec"
 	"strings"
 	"sync"
 )
 
-func RunSubfinderIn(seedDomain string, results chan<- string, wg *sync.WaitGroup) {
+func RunSubfinderIn(seedDomain string, results chan<- string, wg *sync.WaitGroup, scanError *error, mu *sync.Mutex) {
 	defer wg.Done()
 	log8.BaseLogger.Info().Msgf("Running `Subfinder` on %s\n", seedDomain)
 	var out, outerr bytes.Buffer
@@ -23,6 +24,14 @@ func RunSubfinderIn(seedDomain string, results chan<- string, wg *sync.WaitGroup
 		log8.BaseLogger.Debug().Msgf("`Subfinder` reported the following err %s", outerr.String())
 		log8.BaseLogger.Debug().Msg(err.Error())
 		log8.BaseLogger.Error().Msg("An error has ocurred with `Subfinder`")
+
+		// Set the error in a thread-safe way
+		mu.Lock()
+		if *scanError == nil {
+			*scanError = fmt.Errorf("subfinder failed for %s: %w", seedDomain, err)
+		}
+		mu.Unlock()
+
 		close(results)
 		return
 	}

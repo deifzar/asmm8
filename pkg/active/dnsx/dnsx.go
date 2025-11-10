@@ -5,6 +5,7 @@ import (
 	"deifzar/asmm8/pkg/log8"
 	"deifzar/asmm8/pkg/model8"
 	"deifzar/asmm8/pkg/utils"
+	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
@@ -12,7 +13,7 @@ import (
 	"sync"
 )
 
-func RunDnsxIn(seedDomain string, wordlist string, threads int, results chan<- string, wg *sync.WaitGroup) {
+func RunDnsxIn(seedDomain string, wordlist string, threads int, results chan<- string, wg *sync.WaitGroup, scanError *error, mu *sync.Mutex) {
 	defer wg.Done()
 	log8.BaseLogger.Info().Msgf("Running DNS Bruteforce for %s", seedDomain)
 	var out, outerr bytes.Buffer
@@ -26,6 +27,14 @@ func RunDnsxIn(seedDomain string, wordlist string, threads int, results chan<- s
 		log8.BaseLogger.Debug().Msgf("`dnsx` reported the following err %s", outerr.String())
 		log8.BaseLogger.Debug().Msg(err.Error())
 		log8.BaseLogger.Error().Msg("An error has ocurred with `dnsx`")
+
+		// Set the error in a thread-safe way
+		mu.Lock()
+		if *scanError == nil {
+			*scanError = fmt.Errorf("dnsx failed for %s: %w", seedDomain, err)
+		}
+		mu.Unlock()
+
 		close(results)
 		return
 	}

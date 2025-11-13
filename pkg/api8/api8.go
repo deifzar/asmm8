@@ -81,7 +81,7 @@ func (a *Api8) Init() error {
 func (a *Api8) InitializeConsumerAfterReady() {
 	go func() {
 		locationService := a.Config.GetString("ORCHESTRATORM8.Services.asmm8")
-		requestURL := locationService + "/ready"
+		requestURL := locationService + "/health"
 
 		log8.BaseLogger.Info().Msg("Waiting for API service to become ready before activating RabbitMQ consumer...")
 

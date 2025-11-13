@@ -23,12 +23,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-type contextKey string
-
-const (
-	deliveryTagKey contextKey = "rabbitmq_delivery_tag"
-)
-
 type Controller8ASSM8 struct {
 	Db     *sql.DB
 	Config *viper.Viper

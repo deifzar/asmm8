@@ -2,6 +2,7 @@ package api8
 
 import (
 	"database/sql"
+	"net/http"
 	"os"
 	"time"
 
@@ -93,6 +94,68 @@ func (a *Api8) Init() error {
 	a.DB = connDB
 	a.Config = v
 	return nil
+}
+
+// InitializeConsumerAfterReady starts a goroutine that waits for the API service
+// to become ready (via /ready endpoint) before initializing RabbitMQ queues and consumers.
+// This prevents consumers from receiving messages before the API can handle them.
+func (a *Api8) InitializeConsumerAfterReady() {
+	go func() {
+		locationService := a.Config.GetString("ORCHESTRATORM8.Services.asmm8")
+		requestURL := locationService + "/ready"
+
+		log8.BaseLogger.Info().Msg("Waiting for API service to become ready before activating RabbitMQ consumer...")
+
+		// Poll the /ready endpoint until the service is healthy
+		maxRetries := 60 // 5 minutes total (60 * 5 seconds)
+		retryCount := 0
+		for {
+			resp, err := http.Get(requestURL)
+			if err == nil && resp.StatusCode == http.StatusOK {
+				resp.Body.Close()
+				log8.BaseLogger.Info().Msg("API service is ready. Initializing RabbitMQ consumer...")
+				break
+			}
+			if resp != nil {
+				resp.Body.Close()
+			}
+
+			retryCount++
+			if retryCount >= maxRetries {
+				log8.BaseLogger.Error().Msg("Timeout waiting for API service to become ready. Consumer will not be activated.")
+				return
+			}
+
+			time.Sleep(5 * time.Second)
+		}
+
+		// Initialize RabbitMQ orchestrator
+		orchestrator8, err := orchestrator8.NewOrchestrator8()
+		if err != nil {
+			log8.BaseLogger.Error().Err(err).Msg("Error connecting to the RabbitMQ server.")
+			return
+		}
+
+		err = orchestrator8.InitOrchestrator()
+		if err != nil {
+			log8.BaseLogger.Error().Err(err).Msg("Error bringing up the RabbitMQ exchanges.")
+			return
+		}
+
+		err = orchestrator8.ActivateQueueByService("asmm8")
+		if err != nil {
+			log8.BaseLogger.Error().Err(err).Msg("Error bringing up the RabbitMQ queues for the `asmm8` service.")
+			return
+		}
+
+		err = orchestrator8.ActivateConsumerByService("asmm8")
+		if err != nil {
+			log8.BaseLogger.Error().Err(err).Msg("Error activating consumer with dedicated connection for the `asmm8` service.")
+			return
+		}
+
+		log8.BaseLogger.Info().Msg("RabbitMQ consumer successfully activated for asmm8 service.")
+	}()
 }
 
 func (a *Api8) Routes() {

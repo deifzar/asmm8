@@ -70,27 +70,6 @@ func (a *Api8) Init() error {
 		return err2
 	}
 
-	orchestrator8, err := orchestrator8.NewOrchestrator8()
-	if err != nil {
-		log8.BaseLogger.Error().Msg("Error connecting to the RabbitMQ server.")
-		return err
-	}
-	err = orchestrator8.InitOrchestrator()
-	if err != nil {
-		log8.BaseLogger.Error().Msg("Error bringing up the RabbitMQ exchanges.")
-		return err
-	}
-	err = orchestrator8.ActivateQueueByService("asmm8")
-	if err != nil {
-		log8.BaseLogger.Error().Msg("Error bringing up the RabbitMQ queues for the `asmm8` service.")
-		return err
-	}
-	err = orchestrator8.ActivateConsumerByService("asmm8")
-	if err != nil {
-		log8.BaseLogger.Error().Msg("Error activating consumer with dedicated connection for the `asmm8` service.")
-		return err
-	}
-
 	a.DB = connDB
 	a.Config = v
 	return nil

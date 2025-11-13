@@ -71,7 +71,6 @@ var launchCmd = &cobra.Command{
 			// Start goroutine to initialize consumer after API becomes ready
 			a.InitializeConsumerAfterReady()
 			a.Run(address) // This blocks until server shutdown
-			log8.BaseLogger.Info().Msg("API service successfully starting on " + address)
 			// Cleanup when server stops
 			log8.BaseLogger.Info().Msg("API service stopped, cleaning up connection pool...")
 			amqpM8.CleanupConnectionPool()

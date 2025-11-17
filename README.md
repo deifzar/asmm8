@@ -326,7 +326,7 @@ asmm8/
 │   ├── db8/               # Database access layer (6 modules)
 │   ├── log8/              # Structured logging (zerolog)
 │   ├── model8/            # Data models and domain entities (13 files)
-│   ├── notification8/     # Discord notifications
+│   ├── notification8/     # Notification system (multi-channel)
 │   ├── orchestrator8/     # Service orchestration
 │   ├── passive/           # Passive scan utilities
 │   └── utils/             # Utility functions

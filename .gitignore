@@ -35,5 +35,6 @@ wordlist/*
 !wordlist/subdomainslite.txt
 
 # AI
+.claude/*
 CLAUDE.md
 

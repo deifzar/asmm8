@@ -4,7 +4,7 @@
 
 **Production-grade Go microservice for automated subdomain enumeration and reconnaissance.**
 
-[![Go Version](https://img.shields.io/badge/Go-1.21.5-00ADD8?logo=go)](https://go.dev/)
+[![Go Version](https://img.shields.io/badge/Go-1.21.5+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker)](dockerfile)
 [![Status](https://img.shields.io/badge/status-pre--production-orange)](https://github.com/yourusername/asmm8)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)

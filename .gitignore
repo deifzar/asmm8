@@ -34,9 +34,6 @@ wordlist/*
 !wordlist/.gitkeep
 !wordlist/subdomainslite.txt
 
-# docs folder
-docs/*
-
 # AI
 CLAUDE.md
 

@@ -2,11 +2,12 @@
 
 <div align="center">
 
-**Production-grade Go microservice for automated subdomain enumeration and reconnaissance**
+**Production-grade Go microservice for automated subdomain enumeration and reconnaissance.**
 
 [![Go Version](https://img.shields.io/badge/Go-1.21.5-00ADD8?logo=go)](https://go.dev/)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker)](dockerfile)
+[![Status](https://img.shields.io/badge/status-pre--production-orange)](https://github.com/yourusername/asmm8)
+[![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 
 [Features](#features) • [Quick Start](#quick-start) • [Documentation](#documentation) • [Architecture](#architecture) • [API](#api-reference)
 
@@ -32,15 +33,6 @@ ASMM8 (Asset Surface Management Mate) is a production-grade Go microservice desi
 - **Production Ready**: Docker containerization, health checks, and graceful shutdown
 - **Scalable Architecture**: Interface-based design with dependency injection
 - **Comprehensive Tooling**: Integration with industry-standard tools (Subfinder, DNSx, Alterx, HTTPx)
-
-### Stats at a Glance
-
-```
-📁 45 Go source files        🔧 6 major components
-📊 4,963 lines of code        🐳 Multi-stage Docker build
-📦 15 packages                🔌 REST API with 15+ endpoints
-🛠️  4 external tools          💾 PostgreSQL + RabbitMQ
-```
 
 ---
 
@@ -316,6 +308,33 @@ ASMM8:
 
 4. ORCHESTRATION
    └─→ Publish results to downstream services via RabbitMQ
+```
+
+### Package Structure
+
+```
+asmm8/
+├── cmd/                    # CLI commands (Cobra)
+│   ├── root.go            # Base command setup
+│   ├── launch.go          # API service launcher
+│   └── version.go         # Version information
+├── pkg/                    # 13 packages, 42 Go files
+|   ├── active/            # Active scan utilities
+│   ├── amqpM8/            # RabbitMQ connection pooling (5 files)
+│   ├── api8/              # HTTP API routes and initialization
+│   ├── cleanup8/          # Temporary file cleanup utilities
+│   ├── configparser/      # Configuration management (Viper)
+│   ├── controller8/       # Business logic controllers
+│   ├── db8/               # Database access layer (6 modules)
+│   ├── log8/              # Structured logging (zerolog)
+│   ├── model8/            # Data models and domain entities (13 files)
+│   ├── notification8/     # Discord notifications
+│   ├── orchestrator8/     # Service orchestration
+│   ├── passive/           # Passive scan utilities
+│   └── utils/             # Utility functions
+├── configs/               # Configuration files
+├── docs/                  # Comprehensive documentation
+└── main.go                # Application entry point
 ```
 
 ### Key Components

@@ -1,4 +1,4 @@
-# Builddd
+# Build
 FROM golang:1.25-alpine3.22 AS builder
 # Install only required build dependencies
 RUN apk update && apk add --no-cache git ca-certificates tzdata \

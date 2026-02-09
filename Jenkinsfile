@@ -2,7 +2,8 @@
 
 servicePipeline {
   serviceName = 'asmm8'
-  runScan     = false
+  buildImage   = 'golang:1.24'
+  runCodeScan     = false
   deploy      = false
   environments = ['dev']
 }

@@ -4,9 +4,9 @@ servicePipeline {
   serviceName        = 'asmm8'
   buildImage         = 'golang:1.24'
   runCodeScan        = false
-  runTrivySourceScan = true,
-  runTrivyImageScan  = true,   // Trivy image scan (enabled by default)
-  runTrivyIaCScan    = true,
+  runTrivySourceScan = true
+  runTrivyImageScan  = true
+  runTrivyIaCScan    = true
   trivySeverity      = 'CRITICAL,HIGH'
   trivySkipDirs      = []
   trivySkipFiles     = ['usr/local/bin/dnsx',

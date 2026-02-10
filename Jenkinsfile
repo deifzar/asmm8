@@ -1,13 +1,15 @@
 @Library('microservices-lib') _
 
 servicePipeline {
-  serviceName       = 'asmm8'
-  buildImage        = 'golang:1.24'
-  runCodeScan       = false
-  runImageScan      = true
-  trivySeverity     = 'CRITICAL,HIGH'
-  trivySkipDirs     = []
-  trivySkipFiles    = ['usr/local/bin/dnsx',
+  serviceName        = 'asmm8'
+  buildImage         = 'golang:1.24'
+  runCodeScan        = false
+  runTrivySourceScan = true,
+  runTrivyImageScan  = true,   // Trivy image scan (enabled by default)
+  runTrivyIaCScan    = true,
+  trivySeverity      = 'CRITICAL,HIGH'
+  trivySkipDirs      = []
+  trivySkipFiles     = ['usr/local/bin/dnsx',
                     'usr/local/bin/alterx',
                     'usr/local/bin/subfinder']
   deploy            = false
@@ -17,22 +19,24 @@ servicePipeline {
 
 /* service pipeline map
 servicePipeline = {
-    serviceName       : null,
-    dockerfile        : 'Dockerfile',
-    imageRegistry     : 'ghcr.io/deifzar',
-    runTests          : false,
-    runCodeScan       : false,
-    runImageScan      : true,   // Trivy image scan (enabled by default)
-    trivySkipDirs     : [],     // List of directories to skip in Trivy scan
-    trivySeverity     : 'HIGH,CRITICAL',
-    trivySkipFiles    : [],     // List of files to skip in Trivy scan
-    deploy            : false,
-    environments      : ['dev'],
-    buildImage        : 'golang:1.23', // default Docker image. Other example: node:20
-    goBinary          : null   // defaults to serviceName if not set
+    serviceName         : null,
+    dockerfile          : 'Dockerfile',
+    imageRegistry       : 'ghcr.io/deifzar',
+    runTests            : false,
+    runSASTScan         : false,
+    runTrivySourceScan  : false,
+    runTrivyImageScan   : true,   // Trivy image scan (enabled by default)
+    runTrivyIaCScan     : true,
+    trivySeverity       : 'HIGH,CRITICAL',
+    trivySkipDirs       : [],     // List of directories to skip in Trivy scan
+    trivySkipFiles      : [],     // List of files to skip in Trivy scan
+    deploy              : false,
+    environments        : ['dev'],
+    buildImage          : 'golang:1.23',
+    goBinary            : null,   // defaults to serviceName if not set
     // Binary publishing config
-    publishBinary     : true,
-    composeStackRepo  : 'https://github.com/deifzar/cptm8-compose-stack.git',
-    gitCredentialsId  : 'github-credentials'  // Jenkins credentials ID
+    publishBinary       : true,
+    composeStackRepo    : 'https://github.com/deifzar/cptm8-compose-stack.git',
+    gitCredentialsId    : null  // Jenkins credentials ID
 }
 */

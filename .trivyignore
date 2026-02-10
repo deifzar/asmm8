@@ -1,0 +1,14 @@
+# Ignore a specific OpenSSL vulnerability because we don't use the affected module
+# CVE-2023-0286
+
+# This one is a false positive in our base image
+# CVE-2022-4450
+
+# Ignore until we upgrade the framework next month
+# CVE-2021-33503  # exp:2026-03-15
+
+# Allow root user in Dockerfile for this specific legacy container
+# AVD-DS-0006
+
+# Allow public S3 bucket for the static assets repository
+# AVD-AWS-0089

@@ -16,7 +16,7 @@ servicePipeline {
   environments            = ['dev']
   gitCredentialsId        = 'github-app-jenkins'
   sonarqubeUrl            = 'https://sonarqube-cptm8net.spaincentral.cloudapp.azure.com'
-  sonarqubeProjectKey     = null
+  sonarqubeProjectKey     = 'ASMM8-SAST'
   sonarqubeCredentialsId  = 'sonarqube-token'  // Jenkins credentials ID for SonarQube token
 }
 

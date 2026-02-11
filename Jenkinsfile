@@ -3,8 +3,8 @@
 servicePipeline {
   serviceName             = 'asmm8'
   buildImage              = 'golang:1.24'
-  runTests                = false
-  runSASTScan             = true // sonarqube
+  runTests                = true
+  runSASTScan             = true // Sonarqube SAST
   runTrivySourceScan      = true
   runTrivyImageScan       = true
   runTrivyIaCScan         = true

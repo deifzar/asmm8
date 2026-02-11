@@ -24,7 +24,7 @@ func RunAlterxIn(seedDomain string, threads int, input string, output string, re
 
 	if err != nil {
 		log8.BaseLogger.Debug().Msgf("`alterx` reported the following err %s", outerr.String())
-		log8.BaseLogger.Debug().Msgf(err.Error())
+		log8.BaseLogger.Debug().Msg(err.Error())
 		log8.BaseLogger.Error().Msg("An error has ocurred with `alterx`")
 
 		// Set the error in a thread-safe way

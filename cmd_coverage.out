@@ -1,0 +1,18 @@
+mode: set
+deifzar/asmm8/cmd/launch.go:31.54,34.32 3 0
+deifzar/asmm8/cmd/launch.go:34.32,39.4 4 0
+deifzar/asmm8/cmd/launch.go:39.9,40.39 1 0
+deifzar/asmm8/cmd/launch.go:40.39,43.5 2 0
+deifzar/asmm8/cmd/launch.go:44.4,44.42 1 0
+deifzar/asmm8/cmd/launch.go:44.42,47.5 2 0
+deifzar/asmm8/cmd/launch.go:48.4,53.14 4 0
+deifzar/asmm8/cmd/launch.go:53.14,58.5 4 0
+deifzar/asmm8/cmd/launch.go:60.4,62.18 3 0
+deifzar/asmm8/cmd/launch.go:62.18,69.5 5 0
+deifzar/asmm8/cmd/launch.go:70.4,77.14 6 0
+deifzar/asmm8/cmd/launch.go:82.13,96.2 3 1
+deifzar/asmm8/cmd/root.go:42.16,44.16 2 0
+deifzar/asmm8/cmd/root.go:44.16,48.3 3 0
+deifzar/asmm8/cmd/root.go:51.13,61.2 1 1
+deifzar/asmm8/cmd/version.go:23.47,25.3 1 0
+deifzar/asmm8/cmd/version.go:28.13,40.2 1 1

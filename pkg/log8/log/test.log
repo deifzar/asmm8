@@ -78,3 +78,13 @@
 [90m2026-02-11T10:13:42+01:00[0m [32mINF[0m [1mlog8_test.go:88[0m[36m >[0m [1mfeature status[0m [36mAPI_service=[0mASMM8 [36menabled=[0mtrue [36mgo_version=[0mgo1.25.7 [36mkey=[0m
 [90m2026-02-11T10:13:42+01:00[0m [32mINF[0m [1mlog8_test.go:98[0m[36m >[0m [1mscan complete[0m [36mAPI_service=[0mASMM8 [36mactive=[0mtrue [36mdomain=[0mexample.com [36mgo_version=[0mgo1.25.7 [36mkey=[0m [36msubdomains=[0m10
 [90m2026-02-11T10:13:42+01:00[0m [31mERR[0m [1mlog8_test.go:105[0m[36m >[0m [1mfile not found[0m [36merror=[0m[31m[1m"file does not exist"[0m[0m [36mAPI_service=[0mASMM8 [36mgo_version=[0mgo1.25.7 [36mkey=[0m
+[90m2026-02-11T11:38:53+01:00[0m [32mINF[0m [1mlog8_test.go:39[0m[36m >[0m [1mtest message[0m [36mAPI_service=[0mASMM8 [36mgo_version=[0mgo1.25.7 [36mkey=[0m
+[90m2026-02-11T11:38:53+01:00[0m [33mWRN[0m [1mlog8_test.go:41[0m[36m >[0m [1mwarning message[0m [36mAPI_service=[0mASMM8 [36mcount=[0m5 [36mgo_version=[0mgo1.25.7 [36mkey=[0m
+[90m2026-02-11T11:38:53+01:00[0m [32mINF[0m [1mlog8_test.go:50[0m[36m >[0m [1minfo test[0m [36mAPI_service=[0mASMM8 [36mgo_version=[0mgo1.25.7 [36mkey=[0m
+[90m2026-02-11T11:38:53+01:00[0m [33mWRN[0m [1mlog8_test.go:62[0m[36m >[0m [1mwarn test[0m [36mAPI_service=[0mASMM8 [36mgo_version=[0mgo1.25.7 [36mkey=[0m
+[90m2026-02-11T11:38:53+01:00[0m [31mERR[0m [1mlog8_test.go:68[0m[36m >[0m [1merror test[0m [36mAPI_service=[0mASMM8 [36mgo_version=[0mgo1.25.7 [36mkey=[0m
+[90m2026-02-11T11:38:53+01:00[0m [32mINF[0m [1mlog8_test.go:76[0m[36m >[0m [1mprocessing domain[0m [36mAPI_service=[0mASMM8 [36mdomain=[0mexample.com [36mgo_version=[0mgo1.25.7 [36mkey=[0m
+[90m2026-02-11T11:38:53+01:00[0m [32mINF[0m [1mlog8_test.go:82[0m[36m >[0m [1mfound subdomains[0m [36mAPI_service=[0mASMM8 [36mcount=[0m42 [36mgo_version=[0mgo1.25.7 [36mkey=[0m
+[90m2026-02-11T11:38:53+01:00[0m [32mINF[0m [1mlog8_test.go:88[0m[36m >[0m [1mfeature status[0m [36mAPI_service=[0mASMM8 [36menabled=[0mtrue [36mgo_version=[0mgo1.25.7 [36mkey=[0m
+[90m2026-02-11T11:38:53+01:00[0m [32mINF[0m [1mlog8_test.go:98[0m[36m >[0m [1mscan complete[0m [36mAPI_service=[0mASMM8 [36mactive=[0mtrue [36mdomain=[0mexample.com [36mgo_version=[0mgo1.25.7 [36mkey=[0m [36msubdomains=[0m10
+[90m2026-02-11T11:38:53+01:00[0m [31mERR[0m [1mlog8_test.go:105[0m[36m >[0m [1mfile not found[0m [36merror=[0m[31m[1m"file does not exist"[0m[0m [36mAPI_service=[0mASMM8 [36mgo_version=[0mgo1.25.7 [36mkey=[0m

@@ -1,6 +1,7 @@
 @Library('microservices-lib') _
 
 servicePipeline {
+  scmProvider             = 'github' // 'github' or 'gitlab'
   serviceName             = 'asmm8'
   buildImage              = 'golang:1.24'
   runTests                = true
@@ -15,18 +16,20 @@ servicePipeline {
                             'usr/local/bin/subfinder']
   deploy                  = false
   environments            = ['dev']
-  gitCredentialsId        = 'github-app-jenkins'
+  composeStackRepo        = 'github.com/deifzar/cptm8-compose-stack.git' // omit `https://`
+  gitCredentialsId        = 'github-app-jenkins' // gitlab-app-jenkins || github-app-jenkins
   sonarqubeUrl            = 'https://sonarqube-cptm8net.spaincentral.cloudapp.azure.com'
   sonarqubeCredentialsId  = 'sonarqube-token'  // Jenkins credentials ID for SonarQube token
 }
 
 /* service pipeline map
-servicePipeline = {
-  serviceName             : null,
+def servicePipeline = [
+    scmProvider             : null, // 'github' or 'gitlab'
+    serviceName             : null,
     dockerfile              : 'dockerfile',
-    imageRegistry           : 'ghcr.io/deifzar',
+    imageRegistry           : null,
     runTests                : false,
-    runSASTScan             : false,
+    runSASTScan             : false, // Sonarqube
     runTrivySourceScan      : false,
     runTrivyImageScan       : true,   // Trivy image scan (enabled by default)
     runTrivyIaCScan         : false,
@@ -39,10 +42,10 @@ servicePipeline = {
     goBinary                : null,   // defaults to serviceName if not set
     // Binary publishing config
     publishBinary           : true,
-    composeStackRepo        : 'https://github.com/deifzar/cptm8-compose-stack.git',
+    composeStackRepo        : null, // 'gitlab.com/cptm8microservices/cptm8-compose-stack.git' || github.com/deifzar/cptm8-compose-stack.git
     gitCredentialsId        : null,  // Jenkins credentials ID
     // SonarQube config
     sonarqubeUrl            : null,  // SonarQube server URL (e.g., 'https://sonar.example.com')
-    sonarqubeCredentialsId  : null   // Jenkins credentials ID for SonarQube token
-}
+    sonarqubeCredentialsId  : null  // Jenkins credentials ID for SonarQube token
+  ]
 */

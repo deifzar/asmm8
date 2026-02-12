@@ -1,7 +1,7 @@
 @Library('microservices-lib') _
 
 servicePipeline {
-  scmProvider             = 'github' // 'github' or 'gitlab'
+  scmProvider             = 'gitlab' // 'github' or 'gitlab'
   serviceName             = 'asmm8'
   buildImage              = 'golang:1.24'
   runTests                = true
@@ -16,13 +16,13 @@ servicePipeline {
                             'usr/local/bin/subfinder']
   deploy                  = false
   environments            = ['dev']
-  composeStackRepo        = 'github.com/deifzar/cptm8-compose-stack.git' // omit `https://`
-  gitCredentialsId        = 'github-app-jenkins' // gitlab-app-jenkins || github-app-jenkins
+  composeStackRepo        = 'gitlab.com/cptm8microservices/cptm8-compose-stack.git' // omit `https://`
+  gitCredentialsId        = 'gitlab-app-jenkins' // gitlab-app-jenkins || github-app-jenkins
   sonarqubeUrl            = 'https://sonarqube-cptm8net.spaincentral.cloudapp.azure.com'
   sonarqubeCredentialsId  = 'sonarqube-token'  // Jenkins credentials ID for SonarQube token
 }
 
-/* service pipeline map
+/* service pipeline mapp
 def servicePipeline = [
     scmProvider             : null, // 'github' or 'gitlab'
     serviceName             : null,

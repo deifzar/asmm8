@@ -1,4 +1,4 @@
-@Library('devops-pipeline-libraries@main') _
+@Library('devops-pipeline-libraries') _
 
 golangPipeline {
   environment             = 'dev'

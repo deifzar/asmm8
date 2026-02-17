@@ -19,9 +19,7 @@ golangPipeline {
                             'usr/local/bin/alterx',
                             'usr/local/bin/subfinder']
   snykSkipDirs            = []
-  snykSkipFiles           = ['usr/local/bin/dnsx',
-                            'usr/local/bin/alterx',
-                            'usr/local/bin/subfinder']
+  snykSkipFiles           = []
   createPullOrMergeRequest = true
   composeStackRepo        = 'gitlab.com/cptm8microservices/cptm8-compose-stack.git' // omit `https://`
   gitCredentialsId        = 'gitlab-pat-jenkins' // gitlab-pat-jenkins || github-app-jenkins

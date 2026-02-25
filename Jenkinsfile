@@ -13,17 +13,20 @@ golangPipeline {
   
   buildingImage           = 'golang:1.24'
 
-  scaSeverity             = 'CRITICAL,HIGH'
+  trivyThreshold          = 'CRITICAL,HIGH'
   trivySkipDirs           = []
   trivySkipFiles          = ['usr/local/bin/dnsx',
                             'usr/local/bin/alterx',
                             'usr/local/bin/subfinder']
+  snykThreshold           = 'high'
   snykSkipDirs            = []
   snykSkipFiles           = []
+  snykCredentialsId       = 'snyk-pat-jenkins'
+  
   createPullOrMergeRequest = true
   composeStackRepo        = 'gitlab.com/cptm8microservices/cptm8-compose-stack.git' // omit `https://`
   gitCredentialsId        = 'gitlab-pat-jenkins' // gitlab-pat-jenkins || github-app-jenkins
-  snykCredentialsId       = 'snyk-pat-jenkins'
+  
   
   sonarqubeCredentialsId  = 'sonarqube-token'  // Jenkins credentials ID for SonarQube token 
   sonarqubeUrl            = 'https://sonarqube-staging.cptm8.net'
@@ -41,22 +44,22 @@ golangPipeline {
     runSAST                   : false, // Sonarqube
     runSCA                    : false,
     runSBOM                   : true,
-    runDeployment             : false,
+    runPublish                : false, // Artifactory
 
     buildingImage                : 'golang:1.23',
-    
+
     // runTrivySourceScan        : false,
     // runTrivyImageScan         : true,   // Trivy image scan (enabled by default)
     // runTrivyIaCScan           : false,
 
-    scaSeverity             : 'HIGH,CRITICAL',
-    // trivy settings    
+    // trivy settings
+    trivyThreshold            : 'HIGH,CRITICAL', // strings with comma: CRITICAL,HIGH,MEDIUM,LOW
     trivySkipDirs             : [],     // List of directories to skip in Trivy SCA scan
     trivySkipFiles            : [],     // List of files to skip in Trivy SCA scan
     // snyk settings
-    snykSkipDirs              : [],     // List of directories to skip in Snyk SCA scan
-    snykSkipFiles             : [],     // List of files to skip in Snyk SCA scan
-    
+    snykThreshold             : 'high'  // single string: critical, high, medium, low
+    snykSkipDirsOrFiles       : [],     // List of directories or files to skip in Snyk SCA scan
+
     // Binary publishing config
     createPullOrMergeRequest  : true,
     composeStackRepo          : null, // 'gitlab.com/cptm8microservices/cptm8-compose-stack.git' || github.com/deifzar/cptm8-compose-stack.git
@@ -67,5 +70,10 @@ golangPipeline {
     // SonarQube config
     sonarqubeCredentialsId    : null,  // Jenkins credentials ID for SonarQube token
     sonarqubeUrl              : null,  // SonarQube server URL (e.g., 'https://sonar.example.com')
+    // Artifactory config
+    artifactoryCredentialsId  : null,  // Jenkins credentials ID for Artifactory token 
+    artifactoryUrl            : null,
+    artifactoryGenericRepo    : null,  // e.g., 'cptm8-generic'
+    artifactoryDockerRepo     : null,  // e.g., 'cptm8-docker'
   }
 */

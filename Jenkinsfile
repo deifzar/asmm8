@@ -26,8 +26,9 @@ golangPipeline {
   snykCredentialsId       = 'snyk-pat-jenkins'
   
   sonarqubeCredentialsId  = 'sonarqube-token'  // Jenkins credentials ID for SonarQube token 
-  sonarqubeUrl            = 'https://sonarqube-cptm8net.spaincentral.cloudapp.azure.com'
-  
+  sonarqubeUrl            = 'https://sonarqube-staging.cptm8.net'
+  artifactoryCredentialsId  = null   // Jenkins credentials ID for Artifactory token 
+  artifactoryUrl            = 'https://trial0ve3le.jfrog.io'
 }
 
 /* service pipeline mapp

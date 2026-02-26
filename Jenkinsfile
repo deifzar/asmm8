@@ -32,8 +32,8 @@ golangPipeline {
   sonarqubeUrl            = 'https://sonarqube-staging.cptm8.net'
   artifactoryCredentialsId  = 'artifactory-pat'   // Jenkins credentials ID for Artifactory token 
   artifactoryUrl            = 'https://trial0ve3le.jfrog.io'
-  artifactoryGenericRepo    = null  // e.g., 'cptm8-generic'
-  artifactoryDockerRepo     = null  /
+  artifactoryGenericRepo    = 'cptm8-generic'  // e.g., 'cptm8-generic'
+  artifactoryDockerRepo     = 'cptm8-docker'  /
 }
 
 /* service pipeline mapp

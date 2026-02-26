@@ -1,9 +1,9 @@
 @Library('devops-pipeline-libraries') _
 
 golangPipeline {
-  environment             = 'dev'
+  environment             = 'staging'
   repoName                = 'asmm8'
-  scmProvider             = 'gitlab' // 'github' or 'gitlab'
+  scmProvider             = 'github' // 'github' or 'gitlab'
 
   runTest                 = true
   runSAST                 = true // Sonarqube SAST

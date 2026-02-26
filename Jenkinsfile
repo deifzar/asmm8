@@ -22,7 +22,7 @@ golangPipeline {
   snykSkipDirs            = []
   snykSkipFiles           = []
   snykCredentialsId       = 'snyk-pat-jenkins'
-  
+
   createPullOrMergeRequest = true
   composeStackRepo        = 'gitlab.com/cptm8microservices/cptm8-compose-stack.git' // omit `https://`
   gitCredentialsId        = 'gitlab-pat-jenkins' // gitlab-pat-jenkins || github-app-jenkins
@@ -30,7 +30,7 @@ golangPipeline {
   
   sonarqubeCredentialsId  = 'sonarqube-token'  // Jenkins credentials ID for SonarQube token 
   sonarqubeUrl            = 'https://sonarqube-staging.cptm8.net'
-  artifactoryCredentialsId  = null   // Jenkins credentials ID for Artifactory token 
+  artifactoryCredentialsId  = 'artifactory-pat'   // Jenkins credentials ID for Artifactory token 
   artifactoryUrl            = 'https://trial0ve3le.jfrog.io'
 }
 

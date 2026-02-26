@@ -9,7 +9,7 @@ golangPipeline {
   runSAST                 = true // Sonarqube SAST
   runSCA                  = true
   runSBOM                 = true
-  runDeployment           = true
+  runPublish              = true
   
   buildingImage           = 'golang:1.24'
 

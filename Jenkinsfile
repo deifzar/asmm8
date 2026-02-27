@@ -30,8 +30,8 @@ golangPipeline {
   
   sonarqubeCredentialsId  = 'sonarqube-token'  // Jenkins credentials ID for SonarQube token 
   sonarqubeUrl            = 'https://sonarqube-staging.cptm8.net'
-  artifactoryUsername     = 'luna'
-  artifactoryCredentialsId  = 'jenkins-luna-pat'   // Jenkins credentials ID for Artifactory token 
+  artifactoryUsername     = 'deadcode'
+  artifactoryCredentialsId  = 'artifactory-deadcode-pat'   // Jenkins credentials ID for Artifactory token 
   artifactoryUrl            = 'https://trial0ve3le.jfrog.io'
   artifactoryGenericRepo    = 'cptm8-generic'  // e.g., 'cptm8-generic'
   artifactoryDockerRepo     = 'cptm8-docker'  // e.g., 'cptm8-docker'
